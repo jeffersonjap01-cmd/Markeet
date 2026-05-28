@@ -28,7 +28,7 @@ struct MainView: View {
             
             //FORUM
             Tab("Forum", systemImage: "bubble.left.and.text.bubble.right.fill"){
-                ForumView()
+                FeedView()
             }
             
             //PROFILE

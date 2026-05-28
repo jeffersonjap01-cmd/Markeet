@@ -11,7 +11,11 @@ struct RootView: View {
                 LoginView()
                     .environmentObject(session)
             } else {
+<<<<<<< HEAD
                 MainTabView()
+=======
+                MainView()
+>>>>>>> feature-backend
                     .environmentObject(session)
             }
         }

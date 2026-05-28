@@ -19,13 +19,16 @@ struct FeedView: View {
 
                 }) {
 
-                    HStack {
+                    HStack(spacing: 6) {
+
                         Image(systemName: "plus")
+
                         Text("Post")
+                            .fontWeight(.semibold)
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
                     .background(
                         LinearGradient(
                             colors: [.purple, .blue],
@@ -40,8 +43,8 @@ struct FeedView: View {
 
             Divider()
 
-            // SEARCH BAR
-            HStack {
+            // CREATE POST BUBBLE
+            HStack(spacing: 12) {
 
                 Circle()
                     .fill(
@@ -51,23 +54,31 @@ struct FeedView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 45, height: 45)
+                    .frame(width: 50, height: 50)
                     .overlay(
                         Text("BS")
                             .foregroundColor(.white)
                             .fontWeight(.bold)
                     )
 
-                Text("Apa yang ingin kamu bagikan?")
-                    .foregroundColor(.gray)
+                HStack {
 
-                Spacer()
+                    Text("Apa yang ingin kamu bagikan?")
+                        .foregroundColor(.gray)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background(Color(.systemGray6))
+                .cornerRadius(30)
             }
-            .padding()
-            .background(Color(.systemGray6))
+            .padding(.horizontal)
+            .padding(.vertical, 12)
 
             Divider()
 
+            // POSTS
             ScrollView {
 
                 VStack(spacing: 0) {
@@ -108,6 +119,7 @@ struct FeedView: View {
                 }
             }
         }
+        .background(Color.white)
     }
 }
 

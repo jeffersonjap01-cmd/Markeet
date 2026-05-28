@@ -10,6 +10,8 @@
 		3F2907BB2FC7DEE90057280A /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2907BA2FC7DEE90057280A /* FirebaseAuth */; };
 		3F2907BD2FC7DEF20057280A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2907BC2FC7DEF20057280A /* FirebaseFirestore */; };
 		3F2907C32FC7E30F0057280A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3F2907C22FC7E30F0057280A /* GoogleService-Info.plist */; };
+		3F2907C52FC7E9010057280A /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2907C42FC7E9010057280A /* FirebaseStorage */; };
+		3F2907C72FC7E9020057280A /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2907C62FC7E9020057280A /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +63,8 @@
 			files = (
 				3F2907BB2FC7DEE90057280A /* FirebaseAuth in Frameworks */,
 				3F2907BD2FC7DEF20057280A /* FirebaseFirestore in Frameworks */,
+				3F2907C52FC7E9010057280A /* FirebaseStorage in Frameworks */,
+				3F2907C72FC7E9020057280A /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +136,8 @@
 			packageProductDependencies = (
 				3F2907BA2FC7DEE90057280A /* FirebaseAuth */,
 				3F2907BC2FC7DEF20057280A /* FirebaseFirestore */,
+				3F2907C42FC7E9010057280A /* FirebaseStorage */,
+				3F2907C62FC7E9020057280A /* FirebaseMessaging */,
 			);
 			productName = Markeet;
 			productReference = 28A1A3182FBEE360003EBF0B /* Markeet.app */;
@@ -424,6 +430,9 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Markeet/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Markeet uses calendar access to add registered events to your iPhone calendar.";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Markeet uses calendar write access to save event reminders you choose to add.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Markeet uses photo library access so you can choose a profile picture.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -452,6 +461,9 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Markeet/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Markeet uses calendar access to add registered events to your iPhone calendar.";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Markeet uses calendar write access to save event reminders you choose to add.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Markeet uses photo library access so you can choose a profile picture.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -600,6 +612,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		3F2907C42FC7E9010057280A /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		3F2907C62FC7E9020057280A /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

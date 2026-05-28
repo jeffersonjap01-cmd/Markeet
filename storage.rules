@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function currentUser() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && currentUser().role == "admin";
+    }
+
+    function isNotBanned() {
+      return isSignedIn() && currentUser().bannedStatus == false;
+    }
+
+    match /profileImages/{uid}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isNotBanned() && request.auth.uid == uid;
+    }
+
+    match /materials/{materialId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /postImages/{uid}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isNotBanned() && request.auth.uid == uid;
+    }
+  }
+}

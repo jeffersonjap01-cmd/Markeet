@@ -107,8 +107,6 @@ struct FeedView: View {
                     )
                 }
             }
-
-            MainView()
         }
     }
 }

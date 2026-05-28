@@ -7,8 +7,12 @@ struct PostCard: View {
     var role: String
     var time: String
     var content: String
-    var likes: Int
-    var comments: Int
+
+    @State var likes: Int
+    @State var comments: Int
+
+    @State private var isLiked = false
+    @State private var showComments = false
 
     var body: some View {
 
@@ -62,17 +66,51 @@ struct PostCard: View {
                 .font(.body)
                 .lineSpacing(5)
 
-            HStack(spacing: 20) {
+            HStack(spacing: 25) {
 
-                Label("\(likes)", systemImage: "heart")
-                Label("\(comments)", systemImage: "message")
+                // LIKE BUTTON
+                Button {
+
+                    isLiked.toggle()
+
+                    if isLiked {
+                        likes += 1
+                    } else {
+                        likes -= 1
+                    }
+
+                } label: {
+
+                    Label(
+                        "\(likes)",
+                        systemImage: isLiked ? "heart.fill" : "heart"
+                    )
+                    .foregroundColor(
+                        isLiked ? .red : .gray
+                    )
+                }
+
+                // COMMENT BUTTON
+                Button {
+
+                    showComments.toggle()
+
+                } label: {
+
+                    Label("\(comments)", systemImage: "message")
+                        .foregroundColor(.gray)
+                }
 
                 Spacer()
             }
-            .foregroundColor(.gray)
+            .font(.subheadline)
         }
         .padding()
         .background(Color.white)
+        .sheet(isPresented: $showComments) {
+
+            CommentSheet()
+        }
     }
 }
 
@@ -82,7 +120,7 @@ struct PostCard: View {
         username: "Sarah Wijaya",
         role: "Mentor",
         time: "2 jam lalu",
-        content: "Tips meningkatkan engagement Instagram 📌 Posting di peak hours (11–13 & 19–21 WIB) 📌 Gunakan hashtag relevan 📌 Konsisten posting minimal 4x seminggu",
+        content: "Tips meningkatkan engagement Instagram 📌",
         likes: 3,
         comments: 2
     )

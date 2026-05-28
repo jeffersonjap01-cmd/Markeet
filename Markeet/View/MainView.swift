@@ -10,8 +10,7 @@ import SwiftUI
 struct MainView: View {
     var body: some View {
         
-        TabView{
-            
+        TabView {
             //HOME
             Tab("Home", systemImage: "house.fill"){
                 HomeView()
@@ -36,8 +35,7 @@ struct MainView: View {
             Tab("Profile", systemImage: "person.crop.circle.fill"){
                 ProfileView()
             }
-            
-        }
+        }.tint(Color(red: 87/255, green: 79/255, blue: 222/255))
         
     }
 }

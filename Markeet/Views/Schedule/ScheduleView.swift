@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ScheduleView: View {
 
-    let days = Array(1...30)
+    @StateObject var vm = ScheduleViewModel()
 
     var body: some View {
 
@@ -17,83 +17,151 @@ struct ScheduleView: View {
 
             ScrollView(showsIndicators: false) {
 
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 25) {
 
                     // TITLE
+
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Jadwal")
+
+                        Text("Schedule")
                             .font(.largeTitle)
                             .fontWeight(.bold)
 
-                        Text("Juni 2026")
+                        Text(vm.monthTitle)
                             .foregroundColor(.gray)
                     }
                     .padding(.horizontal)
 
                     // CALENDAR
+
                     VStack(spacing: 20) {
 
-                        // DAY HEADER
+                        // MONTH CONTROL
+
                         HStack {
-                            ForEach(["Min","Sen","Sel","Rab","Kam","Jum","Sab"], id: \.self) { day in
+
+                            Button {
+
+                                vm.previousMonth()
+
+                            } label: {
+
+                                Image(systemName: "chevron.left")
+                            }
+
+                            Spacer()
+
+                            Text(vm.monthTitle)
+                                .fontWeight(.semibold)
+
+                            Spacer()
+
+                            Button {
+
+                                vm.nextMonth()
+
+                            } label: {
+
+                                Image(systemName: "chevron.right")
+                            }
+                        }
+
+                        // WEEK HEADER
+
+                        HStack {
+
+                            ForEach(
+                                ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+                                id: \.self
+                            ) { day in
+
                                 Text(day)
-                                    .font(.subheadline)
                                     .foregroundColor(.gray)
                                     .frame(maxWidth: .infinity)
                             }
                         }
 
-                        // DATES
+                        // DATE GRID
+
                         LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible()), count: 7),
+                            columns: Array(
+                                repeating: GridItem(.flexible()),
+                                count: 7
+                            ),
                             spacing: 20
                         ) {
 
-                            ForEach(days, id: \.self) { day in
+                            ForEach(vm.days, id: \.self) { date in
 
-                                ZStack {
+                                let day = Calendar.current.component(
+                                    .day,
+                                    from: date
+                                )
 
-                                    // SELECTED DATE
-                                    if day == 15 {
-                                        RoundedRectangle(cornerRadius: 18)
-                                            .fill(
-                                                Color(
-                                                    red: 87/255,
-                                                    green: 79/255,
-                                                    blue: 222/255
+                                Button {
+
+                                    vm.selectedDate = date
+
+                                } label: {
+
+                                    ZStack {
+
+                                        // SELECTED DATE
+
+                                        if Calendar.current.isDate(
+                                            vm.selectedDate,
+                                            inSameDayAs: date
+                                        ) {
+
+                                            RoundedRectangle(cornerRadius: 18)
+                                                .fill(
+                                                    Color(
+                                                        red: 87/255,
+                                                        green: 79/255,
+                                                        blue: 222/255
+                                                    )
                                                 )
-                                            )
-                                            .frame(width: 50, height: 50)
-                                    }
-
-                                    // SECONDARY DATE
-                                    if day == 26 {
-                                        RoundedRectangle(cornerRadius: 18)
-                                            .fill(Color.gray.opacity(0.15))
-                                            .frame(width: 50, height: 50)
-                                    }
-
-                                    VStack(spacing: 4) {
-
-                                        Text("\(day)")
-                                            .fontWeight(day == 15 ? .bold : .regular)
-                                            .foregroundColor(day == 15 ? .white : .black)
-
-                                        // EVENT DOT
-                                        if [10,17,22,28].contains(day) {
-                                            Circle()
-                                                .fill(Color.red.opacity(0.7))
-                                                .frame(width: 6, height: 6)
+                                                .frame(width: 50, height: 50)
                                         }
 
-                                        if day == 15 {
-                                            Circle()
-                                                .fill(Color.white)
-                                                .frame(width: 6, height: 6)
+                                        VStack(spacing: 4) {
+
+                                            Text("\(day)")
+                                                .foregroundColor(
+                                                    Calendar.current.isDate(
+                                                        vm.selectedDate,
+                                                        inSameDayAs: date
+                                                    )
+                                                    ? .white
+                                                    : .black
+                                                )
+
+                                            // RED DOT
+
+                                            if vm.schedules.contains(where: {
+
+                                                Calendar.current.isDate(
+                                                    $0.date,
+                                                    inSameDayAs: date
+                                                )
+                                                &&
+                                                !$0.isCompleted
+                                            }) {
+
+                                                Circle()
+                                                    .fill(
+                                                        Calendar.current.isDate(
+                                                            vm.selectedDate,
+                                                            inSameDayAs: date
+                                                        )
+                                                        ? .white
+                                                        : .red
+                                                    )
+                                                    .frame(width: 6, height: 6)
+                                            }
                                         }
                                     }
                                 }
-                                .frame(height: 50)
                             }
                         }
                     }
@@ -102,101 +170,64 @@ struct ScheduleView: View {
                     .cornerRadius(25)
                     .padding(.horizontal)
 
-                    // SELECTED EVENT
+                    // PERSONAL SCHEDULE
+
                     VStack(alignment: .leading, spacing: 15) {
 
-                        HStack {
-                            Text("📍 15 Juni 2026")
-                                .fontWeight(.semibold)
-
-                            Spacer()
-                        }
-
-                        HStack(spacing: 15) {
-
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(
-                                    Color(
-                                        red: 87/255,
-                                        green: 79/255,
-                                        blue: 222/255
-                                    )
-                                )
-                                .frame(width: 6)
-
-                            Text("Digital Marketing Summit Indonesia 2026")
-                                .font(.subheadline)
-
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(20)
-                    }
-                    .padding(.horizontal)
-
-                    // EVENT LIST
-                    VStack(alignment: .leading, spacing: 15) {
-
-                        Text("🎫 Daftar Event")
+                        Text("📍 Personal Schedule")
                             .font(.title3)
                             .fontWeight(.bold)
 
-                        EventCard()
+                        if vm.filteredSchedules.isEmpty {
+
+                            Text("No Schedule")
+                                .foregroundColor(.gray)
+
+                        } else {
+
+                            ForEach(vm.filteredSchedules) { schedule in
+
+                                PersonalScheduleCard(
+                                    schedule: schedule,
+                                    vm: vm
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    // EVENT TITLE
+
+                    Text("🎫 Event List")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .padding(.horizontal)
+
+                    // EVENT LIST
+
+                    VStack(spacing: 20) {
+
+                        ForEach(vm.publicEvents) { event in
+
+                            Button {
+
+                                vm.selectedEvent = event
+
+                            } label: {
+
+                                EventCard(event: event)
+                            }
+                        }
                     }
                     .padding(.horizontal)
                 }
                 .padding(.vertical)
             }
-            .background(Color.white)
-        }
-    }
-}
+            .sheet(item: $vm.selectedEvent) { event in
 
-struct EventCard: View {
-
-    var body: some View {
-
-        VStack(alignment: .leading, spacing: 0) {
-
-            Image("event")
-                .resizable()
-                .scaledToFill()
-                .frame(height: 180)
-                .clipped()
-
-            VStack(alignment: .leading, spacing: 15) {
-
-                HStack {
-
-                    Text("Digital Marketing Summit Indonesia 2026")
-                        .fontWeight(.semibold)
-
-                    Spacer()
-
-                    Text("Online")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.green.opacity(0.15))
-                        .cornerRadius(20)
-                }
-
-                HStack(spacing: 20) {
-
-                    Label("15 Juni 2026", systemImage: "calendar")
-
-                    Label("09.00 - 17.00 WIB", systemImage: "clock")
-                }
-                .font(.caption)
-                .foregroundColor(.gray)
+                EventDetailView(event: event)
             }
-            .padding()
         }
-        .background(Color.white)
-        .cornerRadius(25)
-        .shadow(color: .black.opacity(0.05), radius: 10)
     }
 }
 

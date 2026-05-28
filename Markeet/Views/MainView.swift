@@ -17,8 +17,8 @@ struct MainView: View {
             }
             
             //COMUNITY
-            Tab("Comunity", systemImage: "person.3.fill"){
-                ComunityView()
+            Tab("Community", systemImage: "person.3.fill"){
+                CommunityView()
             }
             
             //SCHEDULE

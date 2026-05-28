@@ -2,11 +2,37 @@ import SwiftUI
 
 struct FeedView: View {
 
+    @State private var showCreatePost = false
+
+    @State private var posts: [Post] = [
+
+        Post(
+            initials: "SA",
+            username: "Sarah Wijaya",
+            role: "Mentor",
+            time: "2 jam lalu",
+            content: "Tips meningkatkan engagement Instagram 📌 Posting di peak hours (11–13 & 19–21 WIB)",
+            likes: 3,
+            comments: 2,
+            isMine: false
+        ),
+
+        Post(
+            initials: "AH",
+            username: "Ahmad Fauzi",
+            role: "Member",
+            time: "4 jam lalu",
+            content: "Baru selesai baca artikel soal Google SGE.",
+            likes: 2,
+            comments: 1,
+            isMine: false
+        )
+    ]
+
     var body: some View {
 
         VStack(spacing: 0) {
 
-            // HEADER
             HStack {
 
                 Text("Diskusi Global")
@@ -16,6 +42,8 @@ struct FeedView: View {
                 Spacer()
 
                 Button(action: {
+
+                    showCreatePost = true
 
                 }) {
 
@@ -43,7 +71,6 @@ struct FeedView: View {
 
             Divider()
 
-            // CREATE POST BUBBLE
             HStack(spacing: 12) {
 
                 Circle()
@@ -61,64 +88,71 @@ struct FeedView: View {
                             .fontWeight(.bold)
                     )
 
-                HStack {
+                Button(action: {
 
-                    Text("Apa yang ingin kamu bagikan?")
-                        .foregroundColor(.gray)
+                    showCreatePost = true
 
-                    Spacer()
+                }) {
+
+                    HStack {
+
+                        Text("Apa yang ingin kamu bagikan?")
+                            .foregroundColor(.gray)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(30)
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .background(Color(.systemGray6))
-                .cornerRadius(30)
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
 
             Divider()
 
-            // POSTS
             ScrollView {
 
                 VStack(spacing: 0) {
 
-                    PostCard(
-                        initials: "SA",
-                        username: "Sarah Wijaya",
-                        role: "Mentor",
-                        time: "2 jam lalu",
-                        content: "Tips meningkatkan engagement Instagram 📌 Posting di peak hours (11–13 & 19–21 WIB) 📌 Gunakan hashtag relevan 📌 Konsisten posting minimal 4x seminggu",
-                        likes: 3,
-                        comments: 2
-                    )
+                    ForEach(posts) { post in
 
-                    Divider()
+                        PostCard(
+                            post: post
+                        ) {
 
-                    PostCard(
-                        initials: "AH",
-                        username: "Ahmad Fauzi",
-                        role: "Member",
-                        time: "4 jam lalu",
-                        content: "Baru selesai baca artikel soal Google SGE dan dampaknya ke SEO 2026.",
-                        likes: 2,
-                        comments: 1
-                    )
+                            posts.removeAll {
+                                $0.id == post.id
+                            }
+                        }
 
-                    Divider()
-
-                    PostCard(
-                        initials: "SI",
-                        username: "Siti Rahayu",
-                        role: "Member",
-                        time: "6 jam lalu",
-                        content: "Ada rekomendasi tools gratis untuk analisis competitor digital?",
-                        likes: 2,
-                        comments: 2
-                    )
+                        Divider()
+                    }
                 }
             }
         }
+
+        .sheet(isPresented: $showCreatePost) {
+
+            CreatePostView { newContent in
+
+                let newPost = Post(
+                    initials: "BS",
+                    username: "Bintang Student",
+                    role: "Member",
+                    time: "Baru saja",
+                    content: newContent,
+                    likes: 0,
+                    comments: 0,
+                    isMine: true
+                )
+
+                posts.insert(newPost, at: 0)
+            }
+        }
+
         .background(Color.white)
     }
 }

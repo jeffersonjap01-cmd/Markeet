@@ -10,7 +10,7 @@ struct MarkeetApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainView()
+            RootView()
         }
     }
 }

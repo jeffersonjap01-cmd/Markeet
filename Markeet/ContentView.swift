@@ -1,21 +1,25 @@
-//
-//  ContentView.swift
-//  Markeet
-//
-//  Created by JJ on 21/05/26.
-//
-
 import SwiftUI
+import FirebaseFirestore
 
 struct ContentView: View {
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+
+        Button("Test Firebase") {
+
+            let db = Firestore.firestore()
+
+            db.collection("test").addDocument(data: [
+                "message": "Hello Firebase"
+            ]) { error in
+
+                if let error = error {
+                    print("Error: \(error)")
+                } else {
+                    print("Success")
+                }
+            }
         }
-        .padding()
     }
 }
 

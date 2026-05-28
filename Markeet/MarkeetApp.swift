@@ -1,14 +1,13 @@
-//
-//  MarkeetApp.swift
-//  Markeet
-//
-//  Created by JJ on 21/05/26.
-//
-
 import SwiftUI
+import FirebaseCore
 
 @main
 struct MarkeetApp: App {
+
+    init() {
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3F2907BB2FC7DEE90057280A /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2907BA2FC7DEE90057280A /* FirebaseAuth */; };
+		3F2907BD2FC7DEF20057280A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3F2907BC2FC7DEF20057280A /* FirebaseFirestore */; };
+		3F2907C32FC7E30F0057280A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3F2907C22FC7E30F0057280A /* GoogleService-Info.plist */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		28A1A3292FBEE361003EBF0B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +33,7 @@
 		28A1A3182FBEE360003EBF0B /* Markeet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Markeet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		28A1A3282FBEE361003EBF0B /* MarkeetTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarkeetTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		28A1A3322FBEE361003EBF0B /* MarkeetUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarkeetUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3F2907C22FC7E30F0057280A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +59,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F2907BB2FC7DEE90057280A /* FirebaseAuth in Frameworks */,
+				3F2907BD2FC7DEF20057280A /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,7 +87,9 @@
 				28A1A31A2FBEE360003EBF0B /* Markeet */,
 				28A1A32B2FBEE361003EBF0B /* MarkeetTests */,
 				28A1A3352FBEE361003EBF0B /* MarkeetUITests */,
+				3F2907B92FC7DEE90057280A /* Frameworks */,
 				28A1A3192FBEE360003EBF0B /* Products */,
+				3F2907C22FC7E30F0057280A /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -90,6 +101,13 @@
 				28A1A3322FBEE361003EBF0B /* MarkeetUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3F2907B92FC7DEE90057280A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +130,8 @@
 			);
 			name = Markeet;
 			packageProductDependencies = (
+				3F2907BA2FC7DEE90057280A /* FirebaseAuth */,
+				3F2907BC2FC7DEF20057280A /* FirebaseFirestore */,
 			);
 			productName = Markeet;
 			productReference = 28A1A3182FBEE360003EBF0B /* Markeet.app */;
@@ -171,7 +191,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					28A1A3172FBEE360003EBF0B = {
 						CreatedOnToolsVersion = 16.2;
@@ -195,6 +215,9 @@
 			);
 			mainGroup = 28A1A30F2FBEE360003EBF0B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 28A1A3192FBEE360003EBF0B /* Products */;
 			projectDirPath = "";
@@ -212,6 +235,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F2907C32FC7E30F0057280A /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,6 +351,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -383,6 +408,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -552,6 +578,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3F2907BA2FC7DEE90057280A /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		3F2907BC2FC7DEF20057280A /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3F2907B82FC7DE3B0057280A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 28A1A3102FBEE360003EBF0B /* Project object */;
 }

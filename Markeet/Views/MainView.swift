@@ -1,45 +1,49 @@
-//
-//  MainView.swift
-//  Marko
-//
-//  Created by student on 28/05/26.
-//
+// MainView.swift
+// Markeet — Main tab bar matching design screenshots
+// Tabs: Beranda, Komunitas, Jadwal, Diskusi, Profil
 
 import SwiftUI
 
 struct MainView: View {
+    @EnvironmentObject private var session: SessionManager
+
     var body: some View {
-        
         TabView {
-            //HOME
-            Tab("Home", systemImage: "house.fill"){
+            // BERANDA (Home)
+            Tab("Beranda", systemImage: "house.fill") {
                 HomeView()
+                    .environmentObject(session)
             }
-            
-            //COMUNITY
-            Tab("Comunity", systemImage: "person.3.fill"){
+
+            // KOMUNITAS (Community)
+            Tab("Komunitas", systemImage: "person.3.fill") {
                 ComunityView()
+                    .environmentObject(session)
             }
-            
-            //SCHEDULE
-            Tab("Schedule", systemImage: "calendar"){
+
+            // JADWAL (Schedule)
+            Tab("Jadwal", systemImage: "calendar") {
                 ScheduleView()
+                    .environmentObject(session)
             }
-            
-            //FORUM
-            Tab("Forum", systemImage: "bubble.left.and.text.bubble.right.fill"){
+
+            // DISKUSI (Forum)
+            Tab("Diskusi", systemImage: "bubble.left.and.text.bubble.right.fill") {
                 FeedView()
+                    .environmentObject(session)
             }
-            
-            //PROFILE
-            Tab("Profile", systemImage: "person.crop.circle.fill"){
+
+            // PROFIL (Profile)
+            Tab("Profil", systemImage: "person.crop.circle.fill") {
                 ProfileView()
+                    .environmentObject(session)
             }
-        }.tint(Color(red: 87/255, green: 79/255, blue: 222/255))
-        
+        }
+        .tint(AppTheme.primary)
     }
 }
 
 #Preview {
     MainView()
+        .environmentObject(SessionManager())
 }

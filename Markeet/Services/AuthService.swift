@@ -61,10 +61,6 @@ final class AuthService {
         return try await fetchOrCreateProviderProfile(for: result.user)
     }
 
-    func signInWithGoogle(credential: AuthCredential) async throws -> UserModel {
-        let result = try await Auth.auth().signIn(with: credential)
-        return try await fetchOrCreateProviderProfile(for: result.user)
-    }
 
     private func fetchOrCreateProviderProfile(for firebaseUser: FirebaseAuth.User) async throws -> UserModel {
         do {

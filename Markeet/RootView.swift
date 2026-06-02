@@ -16,6 +16,10 @@ struct RootView: View {
                     LoginView()
                         .environmentObject(session)
                         .transition(.opacity)
+                } else if session.currentUser?.isAdmin == true {
+                    AdminMainView()
+                        .environmentObject(session)
+                        .transition(.opacity)
                 } else {
                     MainView()
                         .environmentObject(session)

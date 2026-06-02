@@ -73,6 +73,19 @@ struct AppTheme {
     // MARK: Animation
     static let defaultAnimation = Animation.easeInOut(duration: 0.2)
     static let springAnimation  = Animation.spring(response: 0.35, dampingFraction: 0.65)
+
+    static func roleColor(_ role: UserRole) -> Color {
+        switch role {
+        case .admin:
+            error
+        case .mentor:
+            warning
+        case .member, .communityUser:
+            success
+        case .defaultUser:
+            info
+        }
+    }
 }
 
 // MARK: - Reusable ViewModifiers

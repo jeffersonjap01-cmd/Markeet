@@ -85,7 +85,7 @@ struct ProfileView: View {
 
                 RoleBadge(
                     role: user.role.displayName,
-                    color: roleColor(user.role)
+                    color: AppTheme.roleColor(user.role)
                 )
                 .padding(.top, 4)
             }
@@ -293,14 +293,6 @@ struct ProfileView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func roleColor(_ role: UserRole) -> Color {
-        switch role {
-        case .admin:         return AppTheme.error
-        case .mentor:        return AppTheme.warning
-        case .communityUser: return AppTheme.success
-        case .defaultUser:   return AppTheme.info
-        }
-    }
 }
 
 // MARK: - Profile Avatar (reusable)

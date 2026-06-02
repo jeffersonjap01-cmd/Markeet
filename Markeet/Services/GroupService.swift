@@ -15,6 +15,7 @@ final class GroupService {
 
         let groupId = UUID().uuidString
         let now = Date()
+        let resolvedStatus = resolvedStatus(status, endDate: endDate)
         let group = GroupModel(
             groupId: groupId,
             groupName: name,
@@ -22,8 +23,8 @@ final class GroupService {
             batchNumber: OnboardingManager.shared.currentBatch(at: now).batchNumber,
             startDate: startDate,
             endDate: endDate,
-            registrationOpen: status == .open,
-            status: status,
+            registrationOpen: resolvedStatus == .open,
+            status: resolvedStatus,
             tag: tag,
             members: [],
             mentors: [mentorId],
@@ -174,7 +175,7 @@ final class GroupService {
         }
     }
 
-    func updateGroup(groupId: String, name: String, description: String, startDate: Date, endDate: Date, tag: String, mentorId: String) async throws {
+    func updateGroup(groupId: String, name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, mentorId: String) async throws {
         let group = try await fetchGroup(groupId: groupId)
         guard group.mentors.contains(mentorId) else {
             throw GroupServiceError.notMentorOwner
@@ -185,13 +186,16 @@ final class GroupService {
             throw GroupServiceError.invalidCapacity
         }
 
+        let resolvedStatus = resolvedStatus(status, endDate: endDate)
         try await groupDocument(groupId).updateData([
             "groupName": name,
             "description": description,
             "startDate": Timestamp(date: startDate),
             "endDate": Timestamp(date: endDate),
             "tag": tag,
-            "tags": [tag]
+            "tags": [tag],
+            "status": resolvedStatus.rawValue,
+            "registrationOpen": resolvedStatus == .open
         ])
     }
 
@@ -206,9 +210,10 @@ final class GroupService {
             throw GroupServiceError.invalidCapacity
         }
 
+        let resolvedStatus = resolvedStatus(status, endDate: group.endDate)
         try await groupDocument(groupId).updateData([
-            "status": status.rawValue,
-            "registrationOpen": status == .open
+            "status": resolvedStatus.rawValue,
+            "registrationOpen": resolvedStatus == .open
         ])
     }
 
@@ -276,6 +281,10 @@ final class GroupService {
         updatedGroup.status = .expired
         updatedGroup.registrationOpen = false
         return updatedGroup
+    }
+
+    private func resolvedStatus(_ status: CommunityStatus, endDate: Date) -> CommunityStatus {
+        Date() > endDate ? .expired : status
     }
 
     private func decodeStatus(_ rawValue: String, registrationOpen: Bool) -> CommunityStatus {

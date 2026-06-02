@@ -346,20 +346,24 @@ private struct MentorCommunityManageView: View {
     @EnvironmentObject private var session: SessionManager
     @State private var showingEdit = false
 
+    private var currentGroup: GroupModel {
+        viewModel.mentorGroups.first { $0.groupId == group.groupId } ?? group
+    }
+
     var body: some View {
         List {
             Section("Community") {
-                Text(group.description)
-                LabeledContent("Tag", value: group.tag)
-                LabeledContent("Members", value: "\(group.members.count)/\(min(group.maxMembers, AppConstants.maxGroupMembers))")
-                LabeledContent("Mentors", value: "\(group.mentors.count)/\(min(group.maxMentors, AppConstants.maxGroupMentors))")
-                LabeledContent("Period", value: "\(group.startDate.formatted(date: .abbreviated, time: .omitted)) - \(group.endDate.formatted(date: .abbreviated, time: .omitted))")
-                LabeledContent("Status", value: group.status.displayName)
+                Text(currentGroup.description)
+                LabeledContent("Tag", value: currentGroup.tag)
+                LabeledContent("Members", value: "\(currentGroup.members.count)/\(min(currentGroup.maxMembers, AppConstants.maxGroupMembers))")
+                LabeledContent("Mentors", value: "\(currentGroup.mentors.count)/\(min(currentGroup.maxMentors, AppConstants.maxGroupMentors))")
+                LabeledContent("Period", value: "\(currentGroup.startDate.formatted(date: .abbreviated, time: .omitted)) - \(currentGroup.endDate.formatted(date: .abbreviated, time: .omitted))")
+                LabeledContent("Status", value: currentGroup.status.displayName)
             }
 
             Section {
                 NavigationLink {
-                    GroupChatView(group: group)
+                    GroupChatView(group: currentGroup)
                         .environmentObject(session)
                 } label: {
                     Label("Open Chat", systemImage: "message.fill")
@@ -371,24 +375,25 @@ private struct MentorCommunityManageView: View {
                     Label("Edit Community", systemImage: "pencil")
                 }
 
-                Button(group.status == .open ? "Close Community" : "Open Community") {
+                Button(currentGroup.status == .open ? "Close Community" : "Open Community") {
                     Task {
-                        await viewModel.updateStatus(group, status: group.status == .open ? .closed : .open, session: session)
+                        await viewModel.updateStatus(currentGroup, status: currentGroup.status == .open ? .closed : .open, session: session)
                     }
                 }
             }
         }
-        .navigationTitle(group.groupName)
+        .navigationTitle(currentGroup.groupName)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEdit) {
-            CommunityEditorView(title: "Edit Community", group: group) { name, description, startDate, endDate, tag, _ in
+            CommunityEditorView(title: "Edit Community", group: currentGroup) { name, description, startDate, endDate, tag, status in
                 await viewModel.updateCommunity(
-                    group,
+                    currentGroup,
                     name: name,
                     description: description,
                     startDate: startDate,
                     endDate: endDate,
                     tag: tag,
+                    status: status,
                     session: session
                 )
             }

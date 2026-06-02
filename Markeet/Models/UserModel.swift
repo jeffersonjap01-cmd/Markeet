@@ -72,7 +72,4 @@ struct UserModel: Identifiable, Equatable {
         role.isCommunityMember || !assignedCommunities.isEmpty
     }
 
-    var needsInterestOnboarding: Bool {
-        !isAdmin && marketingInterests.isEmpty
-    }
 }

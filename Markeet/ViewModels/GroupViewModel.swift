@@ -79,7 +79,7 @@ final class GroupViewModel: ObservableObject {
         }
     }
 
-    func updateCommunity(_ group: GroupModel, name: String, description: String, startDate: Date, endDate: Date, tag: String, session: SessionManager) async {
+    func updateCommunity(_ group: GroupModel, name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, session: SessionManager) async {
         await run {
             guard let user = session.currentUser else {
                 throw GroupViewModelError.missingUser
@@ -92,6 +92,7 @@ final class GroupViewModel: ObservableObject {
                 startDate: startDate,
                 endDate: endDate,
                 tag: tag,
+                status: status,
                 mentorId: user.uid
             )
             self.successMessage = "Community updated."

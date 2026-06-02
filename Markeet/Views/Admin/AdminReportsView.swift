@@ -44,15 +44,35 @@ struct AdminReportsView: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppTheme.textSecondary)
 
-                    Text("\(item.post.reportCount) report\(item.post.reportCount == 1 ? "" : "s")")
+                    Text("\(item.reports.count) active report\(item.reports.count == 1 ? "" : "s")")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(AppTheme.warning)
+
+                    if let latestReportDate = item.reports.map(\.createdAt).max() {
+                        Text("Latest report: \(latestReportDate.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.textTertiary)
+                    }
+
+                    ForEach(item.reports.prefix(3)) { report in
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(report.reason.isEmpty ? "Reported by user" : report.reason)
+                                .font(.system(size: 12))
+                                .foregroundColor(AppTheme.textSecondary)
+                            Text("\(report.status.rawValue.capitalized) • \(report.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppTheme.textTertiary)
+                        }
+                        .padding(8)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
 
                     HStack {
                         Button {
                             Task { await viewModel.approve(item) }
                         } label: {
-                            Label("Approve", systemImage: "checkmark.circle")
+                            Label("Resolve", systemImage: "checkmark.circle")
                         }
                         .buttonStyle(.bordered)
 

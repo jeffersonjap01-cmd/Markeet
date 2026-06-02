@@ -9,40 +9,48 @@ final class ReportService {
     private init() {}
 
     func fetchReportedPosts() async throws -> [AdminReportedPostModel] {
-        let posts = try await PostService.shared.fetchPosts()
-            .filter { $0.reportCount > 0 }
+        let reports = try await fetchPostReports()
+        let reportsByPostId = Dictionary(grouping: reports, by: \.targetId)
 
         var reportedPosts: [AdminReportedPostModel] = []
 
-        for post in posts {
-            let reports = try await fetchReports(targetId: post.postId, targetType: .post)
+        for (postId, reports) in reportsByPostId {
+            let post = try await PostService.shared.fetchPost(postId: postId)
+            guard !post.deleted else {
+                continue
+            }
+
             let author = try? await UserService.shared.fetchUser(uid: post.authorId)
 
             reportedPosts.append(
                 AdminReportedPostModel(
                     post: post,
                     author: author,
-                    reports: reports
+                    reports: reports.sorted { $0.createdAt > $1.createdAt }
                 )
             )
         }
 
-        return reportedPosts
+        return reportedPosts.sorted { lhs, rhs in
+            let lhsDate = lhs.reports.map(\.createdAt).max() ?? lhs.post.createdAt
+            let rhsDate = rhs.reports.map(\.createdAt).max() ?? rhs.post.createdAt
+            return lhsDate > rhsDate
+        }
     }
 
     func approveReports(for postId: String) async throws {
         try await updateReports(for: postId, status: .accepted)
+        try await resetReportCount(for: postId)
     }
 
     func rejectReports(for postId: String) async throws {
         try await updateReports(for: postId, status: .rejected)
+        try await resetReportCount(for: postId)
     }
 
     func dismissReports(for postId: String) async throws {
         try await updateReports(for: postId, status: .rejected)
-        try await db.collection(FirestoreCollections.posts)
-            .document(postId)
-            .updateData(["reportCount": 0])
+        try await resetReportCount(for: postId)
     }
 
     func deleteReportedPost(postId: String) async throws {
@@ -54,12 +62,25 @@ final class ReportService {
         let snapshot = try await db.collection(FirestoreCollections.reports)
             .whereField("targetId", isEqualTo: targetId)
             .whereField("targetType", isEqualTo: targetType.rawValue)
-            .order(by: "createdAt", descending: true)
             .getDocuments()
 
         return snapshot.documents.map { document in
             decode(id: document.documentID, data: document.data())
         }
+        .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private func fetchPostReports() async throws -> [ReportModel] {
+        let snapshot = try await db.collection(FirestoreCollections.reports)
+            .whereField("targetType", isEqualTo: ReportTargetType.post.rawValue)
+            .getDocuments()
+
+        return snapshot.documents
+            .map { document in
+                decode(id: document.documentID, data: document.data())
+            }
+            .filter { $0.status == .pending }
+            .sorted { $0.createdAt > $1.createdAt }
     }
 
     private func updateReports(for postId: String, status: ReportStatus) async throws {
@@ -73,6 +94,12 @@ final class ReportService {
         }
 
         try await batch.commit()
+    }
+
+    private func resetReportCount(for postId: String) async throws {
+        try await db.collection(FirestoreCollections.posts)
+            .document(postId)
+            .updateData(["reportCount": 0])
     }
 
     private func decode(id: String, data: [String: Any]) -> ReportModel {

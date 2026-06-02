@@ -67,13 +67,11 @@ struct PostCard: View {
 
                         Spacer()
 
-                        if !post.isMine {
-                            Button {
-                                showMenu.toggle()
-                            } label: {
-                                Image(systemName: "ellipsis")
-                                    .foregroundColor(.gray)
-                            }
+                        Button {
+                            showMenu.toggle()
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .foregroundColor(.gray)
                         }
                     }
 
@@ -183,7 +181,22 @@ struct PostCard: View {
             titleVisibility: .visible
         ) {
 
-            if !post.isMine {
+            if post.isMine {
+                Button("Delete Post", role: .destructive) {
+                    Task {
+                        do {
+                            try await PostService.shared.deleteOwnPost(
+                                postId: post.postId,
+                                requestingUserId: currentUserId
+                            )
+
+                            onDelete()
+                        } catch {
+                            print(error.localizedDescription)
+                        }
+                    }
+                }
+            } else {
                 Button(
                     "Report Post"
                 ) {

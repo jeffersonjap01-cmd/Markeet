@@ -17,7 +17,7 @@ final class AdminReportsViewModel: ObservableObject {
         await run {
             try await ReportService.shared.approveReports(for: item.post.postId)
             self.reportedPosts = try await ReportService.shared.fetchReportedPosts()
-            self.successMessage = "Report approved."
+            self.successMessage = "Report resolved."
         }
     }
 

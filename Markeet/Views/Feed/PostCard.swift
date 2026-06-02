@@ -2,8 +2,8 @@ import SwiftUI
 
 struct PostCard: View {
 
-    var post: Post
-
+    var post: FeedPost
+    var currentUserId: String
     var onDelete: () -> Void
 
     @State private var likes: Int
@@ -15,9 +15,14 @@ struct PostCard: View {
     @State private var showMenu = false
     @State private var showReportAlert = false
 
-    init(post: Post, onDelete: @escaping () -> Void) {
+    init(
+        post: FeedPost,
+        currentUserId: String,
+        onDelete: @escaping () -> Void
+    ) {
 
         self.post = post
+        self.currentUserId = currentUserId
         self.onDelete = onDelete
 
         _likes = State(initialValue: post.likes)
@@ -63,11 +68,8 @@ struct PostCard: View {
                         Spacer()
 
                         Button {
-
                             showMenu.toggle()
-
                         } label: {
-
                             Image(systemName: "ellipsis")
                                 .foregroundColor(.gray)
                         }
@@ -87,12 +89,35 @@ struct PostCard: View {
 
                 Button {
 
-                    isLiked.toggle()
+                    Task {
 
-                    if isLiked {
-                        likes += 1
-                    } else {
-                        likes -= 1
+                        do {
+
+                            if isLiked {
+
+                                try await LikeService.shared.unlikePost(
+                                    postId: post.postId,
+                                    userId: currentUserId
+                                )
+
+                                isLiked = false
+                                likes -= 1
+
+                            } else {
+
+                                try await LikeService.shared.likePost(
+                                    postId: post.postId,
+                                    userId: currentUserId
+                                )
+
+                                isLiked = true
+                                likes += 1
+                            }
+
+                        } catch {
+
+                            print(error.localizedDescription)
+                        }
                     }
 
                 } label: {
@@ -107,13 +132,14 @@ struct PostCard: View {
                 }
 
                 Button {
-
                     showComments.toggle()
-
                 } label: {
 
-                    Label("\(comments)", systemImage: "message")
-                        .foregroundColor(.gray)
+                    Label(
+                        "\(comments)",
+                        systemImage: "message"
+                    )
+                    .foregroundColor(.gray)
                 }
 
                 Spacer()
@@ -123,9 +149,30 @@ struct PostCard: View {
         .padding()
         .background(Color.white)
 
-        .sheet(isPresented: $showComments) {
+        .task {
 
-            CommentSheet()
+            do {
+
+                isLiked = try await LikeService.shared.hasLiked(
+                    postId: post.postId,
+                    userId: currentUserId
+                )
+
+                likes = try await LikeService.shared.fetchLikeCount(
+                    postId: post.postId
+                )
+
+            } catch {
+
+                print(error.localizedDescription)
+            }
+        }
+
+        .sheet(isPresented: $showComments) {
+            CommentSheet(
+                postId: post.postId,
+                currentUserId: currentUserId
+            )
         }
 
         .confirmationDialog(
@@ -134,32 +181,25 @@ struct PostCard: View {
             titleVisibility: .visible
         ) {
 
-            if post.isMine {
+            Button(
+                "Delete Post",
+                role: .destructive
+            ) {
 
-                Button(role: .destructive) {
+                Task {
 
-                    onDelete()
+                    do {
 
-                } label: {
+                        try await PostService.shared.deletePost(
+                            postId: post.postId
+                        )
 
-                    Label(
-                        "Delete Post",
-                        systemImage: "trash.fill"
-                    )
-                }
+                        onDelete()
 
-            } else {
+                    } catch {
 
-                Button(role: .destructive) {
-
-                    showReportAlert = true
-
-                } label: {
-
-                    Label(
-                        "Report Feed",
-                        systemImage: "flag.fill"
-                    )
+                        print(error.localizedDescription)
+                    }
                 }
             }
         }
@@ -179,20 +219,5 @@ struct PostCard: View {
 }
 
 #Preview {
-
-    PostCard(
-        post: Post(
-            initials: "SA",
-            username: "Sarah Wijaya",
-            role: "Mentor",
-            time: "2 jam lalu",
-            content: "Tips meningkatkan engagement Instagram 📌",
-            likes: 3,
-            comments: 2,
-            isMine: false
-        )
-    ) {
-
-    }
-    .padding()
+    Text("PostCard Preview")
 }

@@ -2,37 +2,30 @@ import SwiftUI
 
 struct FeedView: View {
 
+    @EnvironmentObject var session: SessionManager
+
     @State private var showCreatePost = false
+    @State private var posts: [FeedPost] = []
 
-    @State private var posts: [Post] = [
+    private var userInitials: String {
 
-        Post(
-            initials: "SA",
-            username: "Sarah Wijaya",
-            role: "Mentor",
-            time: "2 jam lalu",
-            content: "Tips meningkatkan engagement Instagram 📌 Posting di peak hours (11–13 & 19–21 WIB)",
-            likes: 3,
-            comments: 2,
-            isMine: false
-        ),
+        guard let name = session.currentUser?.fullName else {
+            return ""
+        }
 
-        Post(
-            initials: "AH",
-            username: "Ahmad Fauzi",
-            role: "Member",
-            time: "4 jam lalu",
-            content: "Baru selesai baca artikel soal Google SGE.",
-            likes: 2,
-            comments: 1,
-            isMine: false
-        )
-    ]
+        return name
+            .split(separator: " ")
+            .prefix(2)
+            .compactMap { $0.first }
+            .map(String.init)
+            .joined()
+    }
 
     var body: some View {
 
         VStack(spacing: 0) {
 
+            // HEADER
             HStack {
 
                 Text("Diskusi Global")
@@ -41,11 +34,9 @@ struct FeedView: View {
 
                 Spacer()
 
-                Button(action: {
-
+                Button {
                     showCreatePost = true
-
-                }) {
+                } label: {
 
                     HStack(spacing: 6) {
 
@@ -71,6 +62,7 @@ struct FeedView: View {
 
             Divider()
 
+            // CREATE POST
             HStack(spacing: 12) {
 
                 Circle()
@@ -83,16 +75,16 @@ struct FeedView: View {
                     )
                     .frame(width: 50, height: 50)
                     .overlay(
-                        Text("BS")
+                        Text(userInitials)
                             .foregroundColor(.white)
                             .fontWeight(.bold)
                     )
 
-                Button(action: {
+                Button {
 
                     showCreatePost = true
 
-                }) {
+                } label: {
 
                     HStack {
 
@@ -106,7 +98,7 @@ struct FeedView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(30)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
@@ -120,7 +112,8 @@ struct FeedView: View {
                     ForEach(posts) { post in
 
                         PostCard(
-                            post: post
+                            post: post,
+                            currentUserId: session.currentUser?.uid ?? ""
                         ) {
 
                             posts.removeAll {
@@ -134,26 +127,98 @@ struct FeedView: View {
             }
         }
 
+        .task {
+            await loadPosts()
+        }
+
         .sheet(isPresented: $showCreatePost) {
 
             CreatePostView { newContent in
 
-                let newPost = Post(
-                    initials: "BS",
-                    username: "Bintang Student",
-                    role: "Member",
-                    time: "Baru saja",
-                    content: newContent,
-                    likes: 0,
-                    comments: 0,
-                    isMine: true
-                )
+                guard let user = session.currentUser else {
+                    return
+                }
 
-                posts.insert(newPost, at: 0)
+                Task {
+
+                    do {
+
+                        try await PostService.shared.createPost(
+                            authorId: user.uid,
+                            content: newContent
+                        )
+
+                        await loadPosts()
+
+                    } catch {
+
+                        print(error.localizedDescription)
+                    }
+                }
             }
         }
+    }
 
-        .background(Color.white)
+    // MARK: - Load Posts
+
+    @MainActor
+    private func loadPosts() async {
+
+        do {
+
+            let firestorePosts = try await PostService.shared.fetchPosts()
+
+            var loadedPosts: [FeedPost] = []
+
+            for post in firestorePosts {
+
+                if post.deleted {
+                    continue
+                }
+
+                do {
+
+                    let author = try await UserService.shared.fetchUser(
+                        uid: post.authorId
+                    )
+
+                    let initials = author.fullName
+                        .split(separator: " ")
+                        .prefix(2)
+                        .compactMap { $0.first }
+                        .map(String.init)
+                        .joined()
+
+                    loadedPosts.append(
+                        FeedPost(
+                            postId: post.postId,
+                            authorId: post.authorId,
+                            initials: initials,
+                            username: author.fullName,
+                            role: author.role.displayName,
+                            time: post.createdAt.formatted(
+                                date: .abbreviated,
+                                time: .shortened
+                            ),
+                            content: post.content,
+                            likes: post.likeCount,
+                            comments: post.commentCount,
+                            isMine: author.uid == session.currentUser?.uid
+                        )
+                    )
+
+                } catch {
+
+                    print(error.localizedDescription)
+                }
+            }
+
+            posts = loadedPosts
+
+        } catch {
+
+            print(error.localizedDescription)
+        }
     }
 }
 

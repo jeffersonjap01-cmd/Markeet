@@ -1,22 +1,15 @@
 import SwiftUI
 
-struct Comment: Identifiable {
-
-    let id = UUID()
-    var username: String
-    var text: String
-    var likes: Int
-    var isLiked: Bool
-}
-
 struct CommentSheet: View {
 
-    @State private var comments: [Comment] = [
-        Comment(username: "Jefferson", text: "Nice post 🔥", likes: 2, isLiked: false),
-        Comment(username: "Alexander", text: "Very helpful!", likes: 1, isLiked: false)
-    ]
+    let postId: String
+    let currentUserId: String
 
+    @State private var comments: [CommentModel] = []
     @State private var newComment = ""
+    @State private var likedComments: Set<String> = []
+    @State private var selectedComment: CommentModel?
+    @State private var showCommentMenu = false
 
     var body: some View {
 
@@ -33,68 +26,105 @@ struct CommentSheet: View {
 
             ScrollView {
 
-                VStack(spacing: 20) {
+                LazyVStack(spacing: 16) {
 
-                    ForEach($comments) { $comment in
+                    ForEach(comments) { comment in
 
-                        VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .top, spacing: 12) {
 
-                            HStack {
-
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [.purple, .blue],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.purple, .blue],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                     )
-                                    .frame(width: 40, height: 40)
+                                )
+                                .frame(width: 40, height: 40)
 
-                                VStack(alignment: .leading) {
+                            VStack(alignment: .leading, spacing: 4) {
 
-                                    Text(comment.username)
-                                        .fontWeight(.semibold)
+                                Text(comment.userName)
+                                    .fontWeight(.semibold)
 
-                                    Text(comment.text)
+                                Text(comment.content)
+
+                                HStack(spacing: 15) {
+
+                                    Button {
+
+                                        Task {
+
+                                            do {
+
+                                                if likedComments.contains(comment.commentId) {
+
+                                                    try await CommentLikeService.shared.unlikeComment(
+                                                        commentId: comment.commentId,
+                                                        userId: currentUserId
+                                                    )
+
+                                                    likedComments.remove(comment.commentId)
+
+                                                } else {
+
+                                                    try await CommentLikeService.shared.likeComment(
+                                                        commentId: comment.commentId,
+                                                        userId: currentUserId
+                                                    )
+
+                                                    likedComments.insert(comment.commentId)
+                                                }
+
+                                                await loadComments()
+
+                                            } catch {
+
+                                                print(error.localizedDescription)
+                                            }
+                                        }
+
+                                    } label: {
+
+                                        Label(
+                                            "\(comment.likeCount)",
+                                            systemImage: likedComments.contains(comment.commentId)
+                                            ? "heart.fill"
+                                            : "heart"
+                                        )
+                                        .foregroundColor(
+                                            likedComments.contains(comment.commentId)
+                                            ? .red
+                                            : .gray
+                                        )
+                                    }
                                 }
 
-                                Spacer()
+                                Text(
+                                    comment.createdAt.formatted(
+                                        date: .abbreviated,
+                                        time: .shortened
+                                    )
+                                )
+                                .font(.caption)
+                                .foregroundColor(.gray)
                             }
 
-                            HStack(spacing: 20) {
+                            Spacer()
+
+                            if comment.userId == currentUserId {
 
                                 Button {
 
-                                    comment.isLiked.toggle()
-
-                                    if comment.isLiked {
-                                        comment.likes += 1
-                                    } else {
-                                        comment.likes -= 1
-                                    }
+                                    selectedComment = comment
+                                    showCommentMenu = true
 
                                 } label: {
 
-                                    Label(
-                                        "\(comment.likes)",
-                                        systemImage: comment.isLiked ? "heart.fill" : "heart"
-                                    )
-                                    .foregroundColor(
-                                        comment.isLiked ? .red : .gray
-                                    )
-                                }
-
-                                Button {
-
-                                } label: {
-
-                                    Text("Reply")
+                                    Image(systemName: "ellipsis")
                                         .foregroundColor(.gray)
                                 }
-                            }
-                            .padding(.leading, 50)
-                        }
+                            }                        }
                     }
                 }
                 .padding()
@@ -104,25 +134,46 @@ struct CommentSheet: View {
 
             HStack {
 
-                TextField("Add comment...", text: $newComment)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(25)
+                TextField(
+                    "Add comment...",
+                    text: $newComment
+                )
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(25)
 
                 Button {
 
-                    guard !newComment.isEmpty else { return }
+                    guard !newComment.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    ).isEmpty else {
+                        return
+                    }
 
-                    comments.append(
-                        Comment(
-                            username: "You",
-                            text: newComment,
-                            likes: 0,
-                            isLiked: false
-                        )
-                    )
+                    Task {
 
-                    newComment = ""
+                        do {
+
+                            let user = try await UserService.shared.fetchUser(
+                                uid: currentUserId
+                            )
+
+                            try await CommentService.shared.createComment(
+                                postId: postId,
+                                userId: currentUserId,
+                                userName: user.fullName,
+                                content: newComment
+                            )
+
+                            newComment = ""
+
+                            await loadComments()
+
+                        } catch {
+
+                            print(error.localizedDescription)
+                        }
+                    }
 
                 } label: {
 
@@ -141,10 +192,87 @@ struct CommentSheet: View {
             }
             .padding()
         }
+
+        .task {
+            await loadComments()
+        }
+
+        .confirmationDialog(
+            "Comment Options",
+            isPresented: $showCommentMenu,
+            titleVisibility: .visible
+        ) {
+
+            Button(
+                "Delete Comment",
+                role: .destructive
+            ) {
+
+                guard let comment = selectedComment else {
+                    return
+                }
+
+                Task {
+
+                    do {
+
+                        try await CommentService.shared.deleteComment(
+                            commentId: comment.commentId,
+                            postId: postId
+                        )
+
+                        await loadComments()
+
+                    } catch {
+
+                        print(error.localizedDescription)
+                    }
+                }
+            }
+        }
         .presentationDetents([.medium, .large])
+    }
+
+    @MainActor
+    private func loadComments() async {
+
+        do {
+
+            let fetchedComments =
+                try await CommentService.shared.fetchComments(
+                    postId: postId
+                )
+
+            comments = fetchedComments.filter {
+                !$0.deleted
+            }
+            var liked: Set<String> = []
+
+            for comment in comments {
+
+                if let hasLiked = try? await CommentLikeService.shared.hasLiked(
+                    commentId: comment.commentId,
+                    userId: currentUserId
+                ),
+                hasLiked {
+
+                    liked.insert(comment.commentId)
+                }
+            }
+
+            likedComments = liked
+
+        } catch {
+
+            print(error.localizedDescription)
+        }
     }
 }
 
 #Preview {
-    CommentSheet()
+
+    CommentSheet(
+        postId: "preview",
+        currentUserId: "preview"
+    )
 }

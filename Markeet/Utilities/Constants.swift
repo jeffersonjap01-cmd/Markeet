@@ -5,6 +5,7 @@ enum FirestoreCollections {
     static let posts = "posts"
     static let comments = "comments"
     static let likes = "likes"
+    static let commentLikes = "commentLikes"
     static let news = "news"
     static let materials = "materials"
     static let groups = "groups"

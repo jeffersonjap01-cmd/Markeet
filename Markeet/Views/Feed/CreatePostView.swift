@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CreatePostView: View {
 
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) private var dismiss
 
     @State private var postContent = ""
 
@@ -37,14 +37,13 @@ struct CreatePostView: View {
 
                     Button("Post") {
 
-                        guard !postContent.trimmingCharacters(in: .whitespaces).isEmpty else {
+                        guard !postContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                             return
                         }
 
                         onPost(postContent)
 
                         dismiss()
-
                     }
                     .fontWeight(.bold)
                 }

@@ -8,13 +8,52 @@ final class GroupService {
 
     private init() {}
 
+    func createGroup(name: String, description: String, startDate: Date, endDate: Date, tag: String, mentorId: String, status: CommunityStatus) async throws {
+        guard !tag.isEmpty else {
+            throw GroupServiceError.missingTag
+        }
+
+        let groupId = UUID().uuidString
+        let now = Date()
+        let group = GroupModel(
+            groupId: groupId,
+            groupName: name,
+            description: description,
+            batchNumber: OnboardingManager.shared.currentBatch(at: now).batchNumber,
+            startDate: startDate,
+            endDate: endDate,
+            registrationOpen: status == .open,
+            status: status,
+            tag: tag,
+            members: [],
+            mentors: [mentorId],
+            maxMembers: AppConstants.maxGroupMembers,
+            minMembers: AppConstants.minGroupMembers,
+            maxMentors: AppConstants.maxGroupMentors,
+            minMentors: AppConstants.minGroupMentors,
+            createdAt: now
+        )
+
+        let batch = db.batch()
+        batch.setData(encode(group), forDocument: groupDocument(groupId))
+        batch.updateData([
+            "assignedCommunities": FieldValue.arrayUnion([groupId])
+        ], forDocument: db.collection(FirestoreCollections.users).document(mentorId))
+        try await batch.commit()
+    }
+
     func fetchGroups() async throws -> [GroupModel] {
         let snapshot = try await db.collection(FirestoreCollections.groups)
-            .order(by: "batchNumber", descending: true)
             .getDocuments()
 
         return snapshot.documents.map { document in
-            decode(id: document.documentID, data: document.data())
+            normalize(decode(id: document.documentID, data: document.data()))
+        }
+        .sorted {
+            if $0.createdAt == $1.createdAt {
+                return $0.groupName < $1.groupName
+            }
+            return $0.createdAt > $1.createdAt
         }
     }
 
@@ -24,17 +63,41 @@ final class GroupService {
             throw GroupServiceError.groupNotFound
         }
 
-        return decode(id: snapshot.documentID, data: data)
+        return normalize(decode(id: snapshot.documentID, data: data))
+    }
+
+    func searchGroups(tags: Set<String>, user: UserModel) async throws -> [GroupModel] {
+        let groups = try await fetchGroups()
+        return groups
+            .filter { group in
+                tags.contains(group.tag)
+                    && canJoin(user: user, group: group)
+            }
+            .sorted { $0.groupName < $1.groupName }
+    }
+
+    func fetchJoinedGroups(user: UserModel) async throws -> [GroupModel] {
+        let groups = try await fetchGroups()
+        return groups
+            .filter { group in
+                group.members.contains(user.uid) || group.mentors.contains(user.uid)
+            }
+            .sorted { $0.groupName < $1.groupName }
+    }
+
+    func fetchMentorGroups(mentorId: String) async throws -> [GroupModel] {
+        let groups = try await fetchGroups()
+        return groups
+            .filter { $0.mentors.contains(mentorId) }
+            .sorted { $0.groupName < $1.groupName }
     }
 
     func recommendationScore(user: UserModel, group: GroupModel) -> Int {
-        let interests = Set(user.marketingInterests.map { $0.lowercased() })
-        let tags = Set(group.tags.map { $0.lowercased() })
-        return interests.intersection(tags).count
+        user.marketingInterests.contains(group.tag) ? 1 : 0
     }
 
     func canJoin(user: UserModel, group: GroupModel) -> Bool {
-        guard group.registrationOpen,
+        guard group.isOpen,
               !group.members.contains(user.uid),
               !group.mentors.contains(user.uid),
               user.assignedCommunities.count < maxCommunities(for: user.role) else {
@@ -65,9 +128,10 @@ final class GroupService {
             let assignedCommunities = userData.stringArray("assignedCommunities")
             let members = groupData.stringArray("members")
             let mentors = groupData.stringArray("mentors")
-            let registrationOpen = groupData.bool("registrationOpen")
+            let status = self.decodeStatus(groupData.string("status"), registrationOpen: groupData.bool("registrationOpen"))
+            let endDate = groupData.date("endDate")
 
-            guard registrationOpen else {
+            guard status == .open, groupData.bool("registrationOpen"), Date() <= endDate else {
                 throw GroupServiceError.groupClosed
             }
 
@@ -110,6 +174,44 @@ final class GroupService {
         }
     }
 
+    func updateGroup(groupId: String, name: String, description: String, startDate: Date, endDate: Date, tag: String, mentorId: String) async throws {
+        let group = try await fetchGroup(groupId: groupId)
+        guard group.mentors.contains(mentorId) else {
+            throw GroupServiceError.notMentorOwner
+        }
+
+        guard group.members.count <= AppConstants.maxGroupMembers,
+              group.mentors.count <= AppConstants.maxGroupMentors else {
+            throw GroupServiceError.invalidCapacity
+        }
+
+        try await groupDocument(groupId).updateData([
+            "groupName": name,
+            "description": description,
+            "startDate": Timestamp(date: startDate),
+            "endDate": Timestamp(date: endDate),
+            "tag": tag,
+            "tags": [tag]
+        ])
+    }
+
+    func updateStatus(groupId: String, status: CommunityStatus, mentorId: String) async throws {
+        let group = try await fetchGroup(groupId: groupId)
+        guard group.mentors.contains(mentorId) else {
+            throw GroupServiceError.notMentorOwner
+        }
+
+        guard group.members.count <= AppConstants.maxGroupMembers,
+              group.mentors.count <= AppConstants.maxGroupMentors else {
+            throw GroupServiceError.invalidCapacity
+        }
+
+        try await groupDocument(groupId).updateData([
+            "status": status.rawValue,
+            "registrationOpen": status == .open
+        ])
+    }
+
     private func maxCommunities(for role: UserRole) -> Int {
         role == .mentor ? AppConstants.maxMentorCommunities : AppConstants.maxJoinedCommunities
     }
@@ -118,22 +220,70 @@ final class GroupService {
         db.collection(FirestoreCollections.groups).document(groupId)
     }
 
+    private func encode(_ group: GroupModel) -> [String: Any] {
+        [
+            "groupId": group.groupId,
+            "groupName": group.groupName,
+            "description": group.description,
+            "batchNumber": group.batchNumber,
+            "startDate": Timestamp(date: group.startDate),
+            "endDate": Timestamp(date: group.endDate),
+            "registrationOpen": group.registrationOpen,
+            "status": group.status.rawValue,
+            "tag": group.tag,
+            "tags": [group.tag],
+            "members": group.members,
+            "mentors": group.mentors,
+            "maxMembers": group.maxMembers,
+            "minMembers": group.minMembers,
+            "maxMentors": group.maxMentors,
+            "minMentors": group.minMentors,
+            "createdAt": Timestamp(date: group.createdAt)
+        ]
+    }
+
     private func decode(id: String, data: [String: Any]) -> GroupModel {
-        GroupModel(
+        let tag = data.string("tag", default: data.stringArray("tags").first ?? "")
+        let registrationOpen = data.bool("registrationOpen")
+        let status = decodeStatus(data.string("status"), registrationOpen: registrationOpen)
+
+        return GroupModel(
             groupId: data.string("groupId", default: id),
             groupName: data.string("groupName"),
+            description: data.string("description"),
             batchNumber: data.int("batchNumber"),
             startDate: data.date("startDate"),
             endDate: data.date("endDate"),
-            registrationOpen: data.bool("registrationOpen"),
-            tags: data.stringArray("tags"),
+            registrationOpen: registrationOpen,
+            status: status,
+            tag: tag,
             members: data.stringArray("members"),
             mentors: data.stringArray("mentors"),
             maxMembers: data.int("maxMembers", default: AppConstants.maxGroupMembers),
             minMembers: data.int("minMembers", default: AppConstants.minGroupMembers),
             maxMentors: data.int("maxMentors", default: AppConstants.maxGroupMentors),
-            minMentors: data.int("minMentors", default: AppConstants.minGroupMentors)
+            minMentors: data.int("minMentors", default: AppConstants.minGroupMentors),
+            createdAt: data.date("createdAt", default: data.date("startDate"))
         )
+    }
+
+    private func normalize(_ group: GroupModel) -> GroupModel {
+        guard group.status != .expired, Date() > group.endDate else {
+            return group
+        }
+
+        var updatedGroup = group
+        updatedGroup.status = .expired
+        updatedGroup.registrationOpen = false
+        return updatedGroup
+    }
+
+    private func decodeStatus(_ rawValue: String, registrationOpen: Bool) -> CommunityStatus {
+        if let status = CommunityStatus(rawValue: rawValue) {
+            return status
+        }
+
+        return registrationOpen ? .open : .closed
     }
 
     private func decodeRole(_ rawValue: String) -> UserRole {
@@ -160,13 +310,16 @@ enum GroupServiceError: LocalizedError {
     case groupMemberLimitReached
     case groupMentorLimitReached
     case alreadyInGroup
+    case missingTag
+    case notMentorOwner
+    case invalidCapacity
 
     var errorDescription: String? {
         switch self {
         case .groupNotFound:
             "Community was not found."
         case .groupClosed:
-            "This community is no longer active."
+            "This community is closed or expired."
         case .userCommunityLimitReached:
             "This user already belongs to the maximum number of communities."
         case .mentorCommunityLimitReached:
@@ -177,6 +330,12 @@ enum GroupServiceError: LocalizedError {
             "This community has reached the maximum number of mentors."
         case .alreadyInGroup:
             "This user already belongs to this community."
+        case .missingTag:
+            "Select one community tag."
+        case .notMentorOwner:
+            "Only a mentor in this community can manage it."
+        case .invalidCapacity:
+            "This community exceeds the allowed capacity."
         }
     }
 }

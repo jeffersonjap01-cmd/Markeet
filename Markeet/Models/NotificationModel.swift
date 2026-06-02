@@ -2,8 +2,6 @@ import Foundation
 
 enum NotificationType: String, Codable {
     case message
-    case assignment
-    case recommendation
     case event
     case report
 }

@@ -14,7 +14,6 @@ enum FirestoreCollections {
     static let reports = "reports"
     static let events = "events"
     static let notifications = "notifications"
-    static let communityRecommendations = "communityRecommendations"
 }
 
 enum StoragePaths {
@@ -39,4 +38,17 @@ enum AppConstants {
     static let maxGroupMentors = 3
     static let minGroupMentors = 1
     static let maxMentorCommunities = 5
+
+    static let marketingInterests = [
+        "Digital Marketing",
+        "Social Media Marketing",
+        "Content Marketing",
+        "SEO",
+        "SEM",
+        "Branding",
+        "Marketing Analytics",
+        "Influencer Marketing",
+        "E-Commerce Marketing",
+        "Email Marketing"
+    ]
 }

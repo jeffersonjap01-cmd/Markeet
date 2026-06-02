@@ -20,6 +20,10 @@ struct RootView: View {
                     AdminMainView()
                         .environmentObject(session)
                         .transition(.opacity)
+                } else if session.currentUser?.needsInterestOnboarding == true {
+                    InterestOnboardingView()
+                        .environmentObject(session)
+                        .transition(.opacity)
                 } else {
                     MainView()
                         .environmentObject(session)

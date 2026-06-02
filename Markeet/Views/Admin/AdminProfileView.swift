@@ -31,10 +31,10 @@ struct AdminProfileView: View {
 
                             VStack(spacing: 2) {
                                 NavigationLink {
-                                    AdminAssignmentView()
+                                    AdminUserManagementView()
                                         .environmentObject(session)
                                 } label: {
-                                    adminRow(icon: "person.3.sequence.fill", title: "Assignment", color: AppTheme.primary)
+                                    adminRow(icon: "person.2.badge.gearshape.fill", title: "User Management", color: AppTheme.primary)
                                 }
 
                                 NavigationLink {

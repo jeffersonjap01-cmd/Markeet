@@ -49,6 +49,7 @@ struct UserModel: Identifiable, Equatable {
     var onboardingStartDate: Date
     var onboardingEndDate: Date
     var onboardingActive: Bool
+    var marketingInterests: [String]
     var assignedCommunities: [String]
     var savedMaterials: [String]
     var registeredEvents: [String]
@@ -60,7 +61,7 @@ struct UserModel: Identifiable, Equatable {
     }
 
     var canJoinMoreCommunities: Bool {
-        canUseOnboardingFeatures && assignedCommunities.count < AppConstants.maxJoinedCommunities
+        assignedCommunities.count < AppConstants.maxJoinedCommunities
     }
 
     var isAdmin: Bool {
@@ -69,5 +70,9 @@ struct UserModel: Identifiable, Equatable {
 
     var isCommunityMember: Bool {
         role.isCommunityMember || !assignedCommunities.isEmpty
+    }
+
+    var needsInterestOnboarding: Bool {
+        !isAdmin && marketingInterests.isEmpty
     }
 }

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ComunityView: View {
     @EnvironmentObject private var session: SessionManager
-    @StateObject private var viewModel = CommunityRecommendationsViewModel()
+    @StateObject private var viewModel = CommunityDiscoveryViewModel()
 
     var body: some View {
         NavigationStack {
@@ -26,72 +26,91 @@ struct ComunityView: View {
                         .foregroundColor(AppTheme.error)
                 }
 
-                Section("Recommendations") {
+                Section("Recommended For You") {
                     if viewModel.recommendations.isEmpty && !viewModel.isLoading {
-                        Text("No community recommendations.")
+                        Text("No matching communities are available right now.")
                             .foregroundColor(AppTheme.textSecondary)
                     }
 
-                    ForEach(viewModel.recommendations) { recommendation in
-                        let group = viewModel.groupsById[recommendation.communityId]
+                    ForEach(viewModel.recommendations) { item in
+                        communityRow(item)
+                    }
+                }
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(group?.groupName ?? "Community")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(AppTheme.textPrimary)
+                Section("All Communities") {
+                    if viewModel.allCommunities.isEmpty && !viewModel.isLoading {
+                        Text("No communities available.")
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
 
-                            if let group {
-                                Text("\(group.members.count)/\(min(group.maxMembers, AppConstants.maxGroupMembers)) members")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AppTheme.textSecondary)
-                            }
-
-                            HStack {
-                                Button {
-                                    Task {
-                                        await viewModel.accept(recommendation, session: session)
-                                    }
-                                } label: {
-                                    Label("Accept", systemImage: "checkmark.circle.fill")
-                                }
-                                .buttonStyle(.borderedProminent)
-
-                                Button(role: .destructive) {
-                                    Task {
-                                        await viewModel.reject(recommendation, session: session)
-                                    }
-                                } label: {
-                                    Label("Reject", systemImage: "xmark.circle")
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                            .font(.system(size: 13, weight: .medium))
-                        }
-                        .padding(.vertical, 6)
+                    ForEach(viewModel.allCommunities) { item in
+                        communityRow(item)
                     }
                 }
             }
             .navigationTitle("Komunitas")
             .navigationBarTitleDisplayMode(.inline)
             .overlay {
-                if viewModel.isLoading && viewModel.recommendations.isEmpty {
+                if viewModel.isLoading && viewModel.allCommunities.isEmpty {
                     ProgressView()
                 }
             }
             .task {
-                if let userId = session.currentUser?.uid {
-                    await viewModel.load(userId: userId)
-                }
+                await viewModel.load(session: session)
             }
             .refreshable {
-                if let userId = session.currentUser?.uid {
-                    await viewModel.load(userId: userId)
-                }
+                await viewModel.load(session: session)
             }
         }
     }
-}
 
+    private func communityRow(_ item: CommunityDiscoveryItem) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(item.group.groupName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+
+                    Text("\(item.group.members.count)/\(min(item.group.maxMembers, AppConstants.maxGroupMembers)) members")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+
+                Spacer()
+
+                if item.score > 0 {
+                    RoleBadge(role: "\(item.score) match", color: AppTheme.primary)
+                }
+            }
+
+            if !item.group.tags.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(item.group.tags, id: \.self) { tag in
+                        Text(tag)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppTheme.primary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(AppTheme.primary.opacity(0.1))
+                            .cornerRadius(AppTheme.Radius.pill)
+                    }
+                }
+            }
+
+            Button {
+                Task {
+                    await viewModel.join(item, session: session)
+                }
+            } label: {
+                Label(item.alreadyJoined ? "Joined" : "Join Community", systemImage: item.alreadyJoined ? "checkmark.circle.fill" : "person.badge.plus")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!item.canJoin || item.alreadyJoined || viewModel.isLoading)
+        }
+        .padding(.vertical, 6)
+    }
+}
 #Preview {
     ComunityView()
         .environmentObject(SessionManager())

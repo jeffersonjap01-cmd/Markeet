@@ -8,6 +8,7 @@ struct GroupModel: Identifiable, Equatable {
     var startDate: Date
     var endDate: Date
     var registrationOpen: Bool
+    var tags: [String]
     var members: [String]
     var mentors: [String]
     var maxMembers: Int

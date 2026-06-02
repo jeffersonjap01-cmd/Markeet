@@ -67,11 +67,13 @@ struct PostCard: View {
 
                         Spacer()
 
-                        Button {
-                            showMenu.toggle()
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .foregroundColor(.gray)
+                        if !post.isMine {
+                            Button {
+                                showMenu.toggle()
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .foregroundColor(.gray)
+                            }
                         }
                     }
 
@@ -181,46 +183,26 @@ struct PostCard: View {
             titleVisibility: .visible
         ) {
 
-            Button(
-                "Report Post"
-            ) {
+            if !post.isMine {
+                Button(
+                    "Report Post"
+                ) {
 
-                Task {
+                    Task {
 
-                    do {
+                        do {
 
-                        try await PostService.shared.reportPost(
-                            postId: post.postId,
-                            reporterId: currentUserId
-                        )
+                            try await PostService.shared.reportPost(
+                                postId: post.postId,
+                                reporterId: currentUserId
+                            )
 
-                        showReportAlert = true
+                            showReportAlert = true
 
-                    } catch {
+                        } catch {
 
-                        print(error.localizedDescription)
-                    }
-                }
-            }
-
-            Button(
-                "Delete Post",
-                role: .destructive
-            ) {
-
-                Task {
-
-                    do {
-
-                        try await PostService.shared.deletePost(
-                            postId: post.postId
-                        )
-
-                        onDelete()
-
-                    } catch {
-
-                        print(error.localizedDescription)
+                            print(error.localizedDescription)
+                        }
                     }
                 }
             }

@@ -21,6 +21,7 @@ final class UserService {
             onboardingStartDate: now,
             onboardingEndDate: now.addingDays(AppConstants.onboardingDays),
             onboardingActive: true,
+            marketingInterests: [],
             assignedCommunities: [],
             savedMaterials: [],
             registeredEvents: [],
@@ -84,6 +85,10 @@ final class UserService {
         try await userDocument(uid).updateData(["assignedCommunities": communityIds])
     }
 
+    func updateMarketingInterests(uid: String, interests: [String]) async throws {
+        try await userDocument(uid).updateData(["marketingInterests": interests])
+    }
+
     func deactivateOnboarding(uid: String) async throws {
         try await userDocument(uid).updateData(["onboardingActive": false])
     }
@@ -120,6 +125,7 @@ final class UserService {
             "onboardingStartDate": Timestamp(date: user.onboardingStartDate),
             "onboardingEndDate": Timestamp(date: user.onboardingEndDate),
             "onboardingActive": user.onboardingActive,
+            "marketingInterests": user.marketingInterests,
             "assignedCommunities": user.assignedCommunities,
             "savedMaterials": user.savedMaterials,
             "registeredEvents": user.registeredEvents,
@@ -140,6 +146,7 @@ final class UserService {
             onboardingStartDate: data.date("onboardingStartDate"),
             onboardingEndDate: data.date("onboardingEndDate"),
             onboardingActive: data.bool("onboardingActive"),
+            marketingInterests: data.stringArray("marketingInterests"),
             assignedCommunities: data.stringArray("assignedCommunities"),
             savedMaterials: data.stringArray("savedMaterials"),
             registeredEvents: data.stringArray("registeredEvents"),

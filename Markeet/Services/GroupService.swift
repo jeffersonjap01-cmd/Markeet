@@ -27,94 +27,95 @@ final class GroupService {
         return decode(id: snapshot.documentID, data: data)
     }
 
-    func canRecommendMember(user: UserModel, group: GroupModel) -> Bool {
-        user.role == .defaultUser
-            && user.assignedCommunities.count < AppConstants.maxJoinedCommunities
-            && !group.members.contains(user.uid)
-            && !group.mentors.contains(user.uid)
-            && group.members.count < min(group.maxMembers, AppConstants.maxGroupMembers)
-            && group.registrationOpen
+    func recommendationScore(user: UserModel, group: GroupModel) -> Int {
+        let interests = Set(user.marketingInterests.map { $0.lowercased() })
+        let tags = Set(group.tags.map { $0.lowercased() })
+        return interests.intersection(tags).count
     }
 
-    func canAssignMentor(user: UserModel, group: GroupModel) -> Bool {
-        user.role == .mentor
-            && user.assignedCommunities.count < AppConstants.maxMentorCommunities
-            && !group.members.contains(user.uid)
-            && !group.mentors.contains(user.uid)
-            && group.mentors.count < min(group.maxMentors, AppConstants.maxGroupMentors)
-            && group.registrationOpen
-    }
-
-    func acceptRecommendation(_ recommendation: CommunityRecommendationModel, userId: String) async throws {
-        guard recommendation.userId == userId else {
-            throw GroupServiceError.invalidRecommendation
+    func canJoin(user: UserModel, group: GroupModel) -> Bool {
+        guard group.registrationOpen,
+              !group.members.contains(user.uid),
+              !group.mentors.contains(user.uid),
+              user.assignedCommunities.count < maxCommunities(for: user.role) else {
+            return false
         }
 
+        if user.role == .mentor {
+            return group.mentors.count < min(group.maxMentors, AppConstants.maxGroupMentors)
+        }
+
+        return group.members.count < min(group.maxMembers, AppConstants.maxGroupMembers)
+    }
+
+    func joinGroup(groupId: String, userId: String) async throws {
         try await db.runVoidAsyncTransaction { transaction in
             let userRef = self.db.collection(FirestoreCollections.users).document(userId)
-            let groupRef = self.groupDocument(recommendation.communityId)
-            let recommendationRef = self.recommendationDocument(recommendation.recommendationId)
+            let groupRef = self.groupDocument(groupId)
 
             let userSnapshot = try transaction.getDocument(userRef)
             let groupSnapshot = try transaction.getDocument(groupRef)
-            let recommendationSnapshot = try transaction.getDocument(recommendationRef)
 
             guard let userData = userSnapshot.data(),
-                  let groupData = groupSnapshot.data(),
-                  let recommendationData = recommendationSnapshot.data() else {
+                  let groupData = groupSnapshot.data() else {
                 throw GroupServiceError.groupNotFound
             }
 
-            let status = CommunityRecommendationStatus(rawValue: recommendationData.string("status")) ?? .pending
-            guard status == .pending else {
-                throw GroupServiceError.recommendationAlreadyResolved
-            }
-
+            let role = self.decodeRole(userData.string("role"))
             let assignedCommunities = userData.stringArray("assignedCommunities")
             let members = groupData.stringArray("members")
             let mentors = groupData.stringArray("mentors")
             let registrationOpen = groupData.bool("registrationOpen")
-            let maxMembers = min(groupData.int("maxMembers", default: AppConstants.maxGroupMembers), AppConstants.maxGroupMembers)
 
             guard registrationOpen else {
                 throw GroupServiceError.groupClosed
             }
 
-            guard assignedCommunities.count < AppConstants.maxJoinedCommunities else {
-                throw GroupServiceError.userCommunityLimitReached
-            }
-
-            guard members.count < maxMembers else {
-                throw GroupServiceError.groupMemberLimitReached
+            guard assignedCommunities.count < self.maxCommunities(for: role) else {
+                throw role == .mentor ? GroupServiceError.mentorCommunityLimitReached : GroupServiceError.userCommunityLimitReached
             }
 
             guard !members.contains(userId), !mentors.contains(userId) else {
                 throw GroupServiceError.alreadyInGroup
             }
 
-            transaction.updateData([
-                "assignedCommunities": FieldValue.arrayUnion([recommendation.communityId]),
-                "role": UserRole.member.rawValue
-            ], forDocument: userRef)
+            if role == .mentor {
+                let maxMentors = min(groupData.int("maxMentors", default: AppConstants.maxGroupMentors), AppConstants.maxGroupMentors)
+                guard mentors.count < maxMentors else {
+                    throw GroupServiceError.groupMentorLimitReached
+                }
 
-            transaction.updateData([
-                "members": FieldValue.arrayUnion([userId])
-            ], forDocument: groupRef)
+                transaction.updateData([
+                    "assignedCommunities": FieldValue.arrayUnion([groupId])
+                ], forDocument: userRef)
 
-            transaction.updateData([
-                "status": CommunityRecommendationStatus.accepted.rawValue,
-                "respondedAt": Timestamp(date: Date())
-            ], forDocument: recommendationRef)
+                transaction.updateData([
+                    "mentors": FieldValue.arrayUnion([userId])
+                ], forDocument: groupRef)
+            } else {
+                let maxMembers = min(groupData.int("maxMembers", default: AppConstants.maxGroupMembers), AppConstants.maxGroupMembers)
+                guard members.count < maxMembers else {
+                    throw GroupServiceError.groupMemberLimitReached
+                }
 
+                transaction.updateData([
+                    "assignedCommunities": FieldValue.arrayUnion([groupId]),
+                    "role": UserRole.member.rawValue
+                ], forDocument: userRef)
+
+                transaction.updateData([
+                    "members": FieldValue.arrayUnion([userId])
+                ], forDocument: groupRef)
+            }
         }
+    }
+
+    private func maxCommunities(for role: UserRole) -> Int {
+        role == .mentor ? AppConstants.maxMentorCommunities : AppConstants.maxJoinedCommunities
     }
 
     private func groupDocument(_ groupId: String) -> DocumentReference {
         db.collection(FirestoreCollections.groups).document(groupId)
-    }
-
-    private func recommendationDocument(_ recommendationId: String) -> DocumentReference {
-        db.collection(FirestoreCollections.communityRecommendations).document(recommendationId)
     }
 
     private func decode(id: String, data: [String: Any]) -> GroupModel {
@@ -125,6 +126,7 @@ final class GroupService {
             startDate: data.date("startDate"),
             endDate: data.date("endDate"),
             registrationOpen: data.bool("registrationOpen"),
+            tags: data.stringArray("tags"),
             members: data.stringArray("members"),
             mentors: data.stringArray("mentors"),
             maxMembers: data.int("maxMembers", default: AppConstants.maxGroupMembers),
@@ -133,13 +135,26 @@ final class GroupService {
             minMentors: data.int("minMentors", default: AppConstants.minGroupMentors)
         )
     }
+
+    private func decodeRole(_ rawValue: String) -> UserRole {
+        switch rawValue {
+        case UserRole.member.rawValue:
+            .member
+        case UserRole.communityUser.rawValue:
+            .communityUser
+        case UserRole.mentor.rawValue:
+            .mentor
+        case UserRole.admin.rawValue:
+            .admin
+        default:
+            .defaultUser
+        }
+    }
 }
 
 enum GroupServiceError: LocalizedError {
     case groupNotFound
     case groupClosed
-    case invalidRecommendation
-    case recommendationAlreadyResolved
     case userCommunityLimitReached
     case mentorCommunityLimitReached
     case groupMemberLimitReached
@@ -152,10 +167,6 @@ enum GroupServiceError: LocalizedError {
             "Community was not found."
         case .groupClosed:
             "This community is no longer active."
-        case .invalidRecommendation:
-            "This recommendation does not belong to the current user."
-        case .recommendationAlreadyResolved:
-            "This recommendation has already been accepted or rejected."
         case .userCommunityLimitReached:
             "This user already belongs to the maximum number of communities."
         case .mentorCommunityLimitReached:
@@ -181,7 +192,7 @@ private extension Firestore {
                     errorPointer?.pointee = error as NSError
                     return nil
                 }
-            }, completion: { result, error in
+            }, completion: { _, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {

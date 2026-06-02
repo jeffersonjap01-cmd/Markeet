@@ -182,6 +182,28 @@ struct PostCard: View {
         ) {
 
             Button(
+                "Report Post"
+            ) {
+
+                Task {
+
+                    do {
+
+                        try await PostService.shared.reportPost(
+                            postId: post.postId,
+                            reporterId: currentUserId
+                        )
+
+                        showReportAlert = true
+
+                    } catch {
+
+                        print(error.localizedDescription)
+                    }
+                }
+            }
+
+            Button(
                 "Delete Post",
                 role: .destructive
             ) {

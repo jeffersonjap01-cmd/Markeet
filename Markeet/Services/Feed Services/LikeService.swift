@@ -24,7 +24,7 @@ final class LikeService {
         ]
 
         try await db
-            .collection(FirestoreCollections.likes)
+            .collection(FirestoreCollections.postLikes)
             .document(likeId)
             .setData(data)
 
@@ -44,7 +44,7 @@ final class LikeService {
         let likeId = "\(postId)_\(userId)"
 
         try await db
-            .collection(FirestoreCollections.likes)
+            .collection(FirestoreCollections.postLikes)
             .document(likeId)
             .delete()
 
@@ -64,7 +64,7 @@ final class LikeService {
         let likeId = "\(postId)_\(userId)"
 
         let snapshot = try await db
-            .collection(FirestoreCollections.likes)
+            .collection(FirestoreCollections.postLikes)
             .document(likeId)
             .getDocument()
 
@@ -76,7 +76,7 @@ final class LikeService {
     ) async throws -> Int {
 
         let snapshot = try await db
-            .collection(FirestoreCollections.likes)
+            .collection(FirestoreCollections.postLikes)
             .whereField("postId", isEqualTo: postId)
             .getDocuments()
 

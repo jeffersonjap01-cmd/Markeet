@@ -3,9 +3,9 @@ import Foundation
 enum FirestoreCollections {
     static let users = "users"
     static let posts = "posts"
-    static let comments = "comments"
-    static let likes = "likes"
-    static let commentLikes = "commentLikes"
+    static let postComments = "post_comments"
+    static let postLikes = "post_likes"
+    static let postCommentLikes = "post_comment_likes"
     static let news = "news"
     static let materials = "materials"
     static let groups = "groups"
@@ -14,6 +14,7 @@ enum FirestoreCollections {
     static let reports = "reports"
     static let events = "events"
     static let notifications = "notifications"
+    static let communityRecommendations = "communityRecommendations"
 }
 
 enum StoragePaths {
@@ -37,4 +38,5 @@ enum AppConstants {
     static let minGroupMembers = 5
     static let maxGroupMentors = 3
     static let minGroupMentors = 1
+    static let maxMentorCommunities = 5
 }

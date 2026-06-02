@@ -24,12 +24,12 @@ final class CommentLikeService {
         ]
 
         try await db
-            .collection("commentLikes")
+            .collection(FirestoreCollections.postCommentLikes)
             .document(likeId)
             .setData(data)
 
         try await db
-            .collection(FirestoreCollections.comments)
+            .collection(FirestoreCollections.postComments)
             .document(commentId)
             .updateData([
                 "likeCount": FieldValue.increment(Int64(1))
@@ -44,12 +44,12 @@ final class CommentLikeService {
         let likeId = "\(commentId)_\(userId)"
 
         try await db
-            .collection("commentLikes")
+            .collection(FirestoreCollections.postCommentLikes)
             .document(likeId)
             .delete()
 
         try await db
-            .collection(FirestoreCollections.comments)
+            .collection(FirestoreCollections.postComments)
             .document(commentId)
             .updateData([
                 "likeCount": FieldValue.increment(Int64(-1))
@@ -64,7 +64,7 @@ final class CommentLikeService {
         let likeId = "\(commentId)_\(userId)"
 
         let snapshot = try await db
-            .collection("commentLikes")
+            .collection(FirestoreCollections.postCommentLikes)
             .document(likeId)
             .getDocument()
 

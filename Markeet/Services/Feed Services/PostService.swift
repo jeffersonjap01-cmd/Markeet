@@ -64,16 +64,29 @@ final class PostService {
         try await db
             .collection(FirestoreCollections.posts)
             .document(postId)
-            .delete()
+            .updateData(["deleted": true])
     }
 
-    func reportPost(postId: String) async throws {
+    func reportPost(postId: String, reporterId: String = "", reason: String = "Reported by user") async throws {
+        let reportId = UUID().uuidString
+        let batch = db.batch()
+        let postRef = db.collection(FirestoreCollections.posts).document(postId)
+        let reportRef = db.collection(FirestoreCollections.reports).document(reportId)
 
-        try await db
-            .collection("posts")
-            .document(postId)
-            .updateData([
-                "reportCount": FieldValue.increment(Int64(1))
-            ])
+        batch.setData([
+            "reportId": reportId,
+            "reporterId": reporterId,
+            "targetId": postId,
+            "targetType": ReportTargetType.post.rawValue,
+            "reason": reason,
+            "status": ReportStatus.pending.rawValue,
+            "createdAt": Timestamp(date: Date())
+        ], forDocument: reportRef)
+
+        batch.updateData([
+            "reportCount": FieldValue.increment(Int64(1))
+        ], forDocument: postRef)
+
+        try await batch.commit()
     }
 }

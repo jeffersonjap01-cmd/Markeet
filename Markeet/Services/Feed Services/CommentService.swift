@@ -30,7 +30,7 @@ final class CommentService {
         ]
 
         try await db
-            .collection(FirestoreCollections.comments)
+            .collection(FirestoreCollections.postComments)
             .document(commentId)
             .setData(data)
 
@@ -47,7 +47,7 @@ final class CommentService {
     ) async throws -> [CommentModel] {
 
         let snapshot = try await db
-            .collection(FirestoreCollections.comments)
+            .collection(FirestoreCollections.postComments)
             .whereField("postId", isEqualTo: postId)
             .getDocuments()
 
@@ -74,7 +74,7 @@ final class CommentService {
     ) async throws {
 
         try await db
-            .collection(FirestoreCollections.comments)
+            .collection(FirestoreCollections.postComments)
             .document(commentId)
             .updateData([
                 "deleted": true

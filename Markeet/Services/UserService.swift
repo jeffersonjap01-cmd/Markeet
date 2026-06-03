@@ -21,6 +21,7 @@ final class UserService {
             onboardingStartDate: now,
             onboardingEndDate: now.addingDays(AppConstants.onboardingDays),
             onboardingActive: true,
+            marketingInterests: [],
             assignedCommunities: [],
             savedMaterials: [],
             registeredEvents: [],
@@ -40,6 +41,29 @@ final class UserService {
         return decode(uid: uid, data: data)
     }
 
+    func fetchAllUsers() async throws -> [UserModel] {
+        let snapshot = try await db.collection(FirestoreCollections.users)
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+
+        return snapshot.documents.map { document in
+            decode(uid: document.documentID, data: document.data())
+        }
+    }
+
+    func fetchUser(email: String) async throws -> UserModel {
+        let snapshot = try await db.collection(FirestoreCollections.users)
+            .whereField("email", isEqualTo: email)
+            .limit(to: 1)
+            .getDocuments()
+
+        guard let document = snapshot.documents.first else {
+            throw UserServiceError.userNotFound
+        }
+
+        return decode(uid: document.documentID, data: document.data())
+    }
+
     func updateProfile(uid: String, fullName: String, bio: String, profileImageURL: String?) async throws {
         var data: [String: Any] = [
             "fullName": fullName,
@@ -51,6 +75,18 @@ final class UserService {
         }
 
         try await userDocument(uid).updateData(data)
+    }
+
+    func updateRole(uid: String, role: UserRole) async throws {
+        try await userDocument(uid).updateData(["role": role.rawValue])
+    }
+
+    func assignCommunities(uid: String, communityIds: [String]) async throws {
+        try await userDocument(uid).updateData(["assignedCommunities": communityIds])
+    }
+
+    func updateMarketingInterests(uid: String, interests: [String]) async throws {
+        try await userDocument(uid).updateData(["marketingInterests": interests])
     }
 
     func deactivateOnboarding(uid: String) async throws {
@@ -89,6 +125,7 @@ final class UserService {
             "onboardingStartDate": Timestamp(date: user.onboardingStartDate),
             "onboardingEndDate": Timestamp(date: user.onboardingEndDate),
             "onboardingActive": user.onboardingActive,
+            "marketingInterests": user.marketingInterests,
             "assignedCommunities": user.assignedCommunities,
             "savedMaterials": user.savedMaterials,
             "registeredEvents": user.registeredEvents,
@@ -102,19 +139,35 @@ final class UserService {
             uid: data.string("uid", default: uid),
             fullName: data.string("fullName"),
             email: data.string("email"),
-            role: UserRole(rawValue: data.string("role")) ?? .defaultUser,
+            role: decodeRole(data.string("role")),
             profileImageURL: data["profileImageURL"] as? String,
             bio: data.string("bio"),
             createdAt: data.date("createdAt"),
             onboardingStartDate: data.date("onboardingStartDate"),
             onboardingEndDate: data.date("onboardingEndDate"),
             onboardingActive: data.bool("onboardingActive"),
+            marketingInterests: data.stringArray("marketingInterests"),
             assignedCommunities: data.stringArray("assignedCommunities"),
             savedMaterials: data.stringArray("savedMaterials"),
             registeredEvents: data.stringArray("registeredEvents"),
             bannedStatus: data.bool("bannedStatus"),
             fcmToken: data["fcmToken"] as? String
         )
+    }
+
+    private func decodeRole(_ rawValue: String) -> UserRole {
+        switch rawValue {
+        case UserRole.member.rawValue:
+            .member
+        case UserRole.communityUser.rawValue:
+            .communityUser
+        case UserRole.mentor.rawValue:
+            .mentor
+        case UserRole.admin.rawValue:
+            .admin
+        default:
+            .defaultUser
+        }
     }
 }
 

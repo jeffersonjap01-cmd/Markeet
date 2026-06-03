@@ -3,8 +3,9 @@ import Foundation
 enum FirestoreCollections {
     static let users = "users"
     static let posts = "posts"
-    static let comments = "comments"
-    static let likes = "likes"
+    static let postComments = "post_comments"
+    static let postLikes = "post_likes"
+    static let postCommentLikes = "post_comment_likes"
     static let news = "news"
     static let materials = "materials"
     static let groups = "groups"
@@ -36,4 +37,18 @@ enum AppConstants {
     static let minGroupMembers = 5
     static let maxGroupMentors = 3
     static let minGroupMentors = 1
+    static let maxMentorCommunities = 5
+
+    static let marketingInterests = [
+        "Digital Marketing",
+        "Social Media Marketing",
+        "Content Marketing",
+        "SEO",
+        "SEM",
+        "Branding",
+        "Marketing Analytics",
+        "Influencer Marketing",
+        "E-Commerce Marketing",
+        "Email Marketing"
+    ]
 }

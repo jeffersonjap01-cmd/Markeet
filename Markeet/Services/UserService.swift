@@ -85,10 +85,6 @@ final class UserService {
         try await userDocument(uid).updateData(["assignedCommunities": communityIds])
     }
 
-    func updateMarketingInterests(uid: String, interests: [String]) async throws {
-        try await userDocument(uid).updateData(["marketingInterests": interests])
-    }
-
     func deactivateOnboarding(uid: String) async throws {
         try await userDocument(uid).updateData(["onboardingActive": false])
     }

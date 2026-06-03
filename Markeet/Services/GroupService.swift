@@ -93,10 +93,6 @@ final class GroupService {
             .sorted { $0.groupName < $1.groupName }
     }
 
-    func recommendationScore(user: UserModel, group: GroupModel) -> Int {
-        user.marketingInterests.contains(group.tag) ? 1 : 0
-    }
-
     func canJoin(user: UserModel, group: GroupModel) -> Bool {
         guard group.isOpen,
               !group.members.contains(user.uid),

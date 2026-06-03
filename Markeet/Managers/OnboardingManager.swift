@@ -19,16 +19,6 @@ final class OnboardingManager {
 
     private init() {}
 
-    func canConsultAdmin(user: UserModel, at date: Date = Date()) -> Bool {
-        user.onboardingActive && date <= user.onboardingEndDate && !user.bannedStatus
-    }
-
-    func canJoinCommunity(user: UserModel, at date: Date = Date()) -> Bool {
-        canConsultAdmin(user: user, at: date)
-            && user.assignedCommunities.count < AppConstants.maxJoinedCommunities
-            && currentBatch(at: date).isRegistrationOpen(at: date)
-    }
-
     func currentBatch(at date: Date = Date()) -> BatchPeriod {
         let calendar = Calendar.current
         let year = calendar.component(.year, from: date)

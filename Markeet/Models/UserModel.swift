@@ -56,10 +56,6 @@ struct UserModel: Identifiable, Equatable {
     var bannedStatus: Bool
     var fcmToken: String?
 
-    var canUseOnboardingFeatures: Bool {
-        onboardingActive && Date() <= onboardingEndDate
-    }
-
     var canJoinMoreCommunities: Bool {
         assignedCommunities.count < AppConstants.maxJoinedCommunities
     }

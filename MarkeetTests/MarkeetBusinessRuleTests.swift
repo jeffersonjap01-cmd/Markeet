@@ -150,13 +150,6 @@ struct CommunityBusinessRuleTests {
         #expect(!GroupService.shared.canJoin(user: makeUser(uid: "mentor-4", role: .mentor), group: fullMentorGroup))
     }
 
-    @Test func groupRecommendationScoreMatchesUserMarketingInterest() {
-        let user = makeUser(marketingInterests: ["SEO", "Branding"])
-
-        #expect(GroupService.shared.recommendationScore(user: user, group: makeGroup(tag: "SEO")) == 1)
-        #expect(GroupService.shared.recommendationScore(user: user, group: makeGroup(tag: "SEM")) == 0)
-    }
-
     @MainActor
     @Test func groupViewModelToggleTagAddsAndRemovesSelection() {
         let viewModel = GroupViewModel()
@@ -184,18 +177,6 @@ struct CommunityBusinessRuleTests {
         #expect(!batch.isRegistrationOpen(at: batch.startDate.addingDays(AppConstants.onboardingDays + 1)))
     }
 
-    @Test func onboardingJoinCommunityRequiresActiveUserAvailableSlotsAndRegistrationWindow() {
-        let date = makeDate(year: 2026, month: 7, day: 3)
-        let active = makeUser(onboardingEndDate: date.addingDays(1), onboardingActive: true)
-        let expired = makeUser(onboardingEndDate: date.addingDays(-1), onboardingActive: true)
-        let banned = makeUser(onboardingEndDate: date.addingDays(1), onboardingActive: true, bannedStatus: true)
-        let full = makeUser(onboardingEndDate: date.addingDays(1), onboardingActive: true, assignedCommunities: ["1", "2", "3", "4", "5"])
-
-        #expect(OnboardingManager.shared.canJoinCommunity(user: active, at: date))
-        #expect(!OnboardingManager.shared.canJoinCommunity(user: expired, at: date))
-        #expect(!OnboardingManager.shared.canJoinCommunity(user: banned, at: date))
-        #expect(!OnboardingManager.shared.canJoinCommunity(user: full, at: date))
-    }
 }
 
 struct GlobalDiscussionAndReportTests {
@@ -289,20 +270,7 @@ struct ViewModelStateTests {
         #expect(viewModel.filteredUsers.count == 3)
     }
 
-    @MainActor
-    @Test func interestOnboardingToggleAddsAndRemovesInterest() {
-        let viewModel = InterestOnboardingViewModel()
-
-        viewModel.toggleInterest("SEO")
-        #expect(viewModel.selectedInterests == ["SEO"])
-
-        viewModel.toggleInterest("SEO")
-        #expect(viewModel.selectedInterests.isEmpty)
-    }
-
-    @Test func onboardingErrorsHaveClearMessages() {
-        #expect(InterestOnboardingError.missingUser.errorDescription == "User session is missing.")
-        #expect(InterestOnboardingError.emptySelection.errorDescription == "Select at least one marketing topic.")
+    @Test func viewModelErrorsHaveClearMessages() {
         #expect(GroupViewModelError.mentorRequired.errorDescription == "Only mentors can create communities.")
         #expect(AdminNewsError.missingAdmin.errorDescription == "Admin session is missing.")
     }

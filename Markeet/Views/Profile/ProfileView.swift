@@ -121,10 +121,6 @@ struct ProfileView: View {
     @ViewBuilder
     private func profileContent(_ user: UserModel) -> some View {
         VStack(spacing: AppTheme.Spacing.md) {
-            // Onboarding card
-            onboardingCard(user)
-                .padding(.horizontal, AppTheme.Spacing.lg)
-
             // Menu sections
             VStack(spacing: 2) {
                 menuSectionHeader("Akun")
@@ -139,9 +135,6 @@ struct ProfileView: View {
 
             VStack(spacing: 2) {
                 menuSectionHeader("Lainnya")
-                menuRow(icon: "info.circle.fill", title: "Tentang Aplikasi", color: AppTheme.info) {
-                    // Placeholder
-                }
                 menuRow(icon: "rectangle.portrait.and.arrow.right", title: "Keluar", color: AppTheme.error) {
                     showLogoutAlert = true
                 }
@@ -155,88 +148,6 @@ struct ProfileView: View {
                 .padding(.top, AppTheme.Spacing.md)
                 .padding(.bottom, 100)
         }
-    }
-
-    // MARK: - Onboarding Card
-    @ViewBuilder
-    private func onboardingCard(_ user: UserModel) -> some View {
-        let isActive = user.canUseOnboardingFeatures
-
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: isActive ? "clock.badge.checkmark" : "clock.badge.xmark")
-                    .font(.system(size: 18))
-                    .foregroundColor(isActive ? AppTheme.success : AppTheme.textTertiary)
-
-                Text("Periode Onboarding")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(AppTheme.textPrimary)
-
-                Spacer()
-
-                Text(isActive ? "Aktif" : "Berakhir")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(isActive ? AppTheme.success : AppTheme.textTertiary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background((isActive ? AppTheme.success : AppTheme.textTertiary).opacity(0.12))
-                    .cornerRadius(AppTheme.Radius.pill)
-            }
-
-            HStack(spacing: AppTheme.Spacing.lg) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Mulai")
-                        .font(.system(size: 11))
-                        .foregroundColor(AppTheme.textTertiary)
-                    Text(user.onboardingStartDate.formatted(date: .abbreviated, time: .omitted))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppTheme.textPrimary)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Berakhir")
-                        .font(.system(size: 11))
-                        .foregroundColor(AppTheme.textTertiary)
-                    Text(user.onboardingEndDate.formatted(date: .abbreviated, time: .omitted))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppTheme.textPrimary)
-                }
-
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Komunitas")
-                        .font(.system(size: 11))
-                        .foregroundColor(AppTheme.textTertiary)
-                    Text("\(user.assignedCommunities.count)/\(AppConstants.maxJoinedCommunities)")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppTheme.textPrimary)
-                }
-            }
-
-            if isActive {
-                // Progress bar
-                let total = user.onboardingEndDate.timeIntervalSince(user.onboardingStartDate)
-                let elapsed = Date().timeIntervalSince(user.onboardingStartDate)
-                let progress = min(max(elapsed / total, 0), 1)
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(AppTheme.divider)
-                            .frame(height: 6)
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(AppTheme.primary)
-                            .frame(width: geo.size.width * progress, height: 6)
-                    }
-                }
-                .frame(height: 6)
-            }
-        }
-        .padding(AppTheme.Spacing.md)
-        .background(AppTheme.surface)
-        .cornerRadius(AppTheme.Radius.lg)
-        .shadow(color: AppTheme.Shadow.soft, radius: 8, y: 2)
     }
 
     // MARK: - Menu Components

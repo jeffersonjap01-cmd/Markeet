@@ -16,7 +16,6 @@ enum FirestoreCollections {
     static let reports = "reports"
     static let events = "events"
     static let eventRegistrations = "event_registrations"
-    static let notifications = "notifications"
 }
 
 enum StoragePaths {

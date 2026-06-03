@@ -9,10 +9,13 @@ enum FirestoreCollections {
     static let news = "news"
     static let materials = "materials"
     static let groups = "groups"
+    static let activities = "activities"
+    static let activityAssignments = "activity_assignments"
     static let chats = "chats"
     static let messages = "messages"
     static let reports = "reports"
     static let events = "events"
+    static let eventRegistrations = "event_registrations"
     static let notifications = "notifications"
 }
 

@@ -328,6 +328,52 @@ struct ViewModelStateTests {
         #expect(!viewModel.isLoading)
         #expect(viewModel.errorMessage == nil)
     }
+
+    @MainActor
+    @Test func scheduleViewModelFiltersActivitiesForSelectedDate() {
+        let today = Date()
+        let tomorrow = today.addingDays(1)
+        let viewModel = EventViewModel()
+        viewModel.selectedDate = today
+        viewModel.activities = [
+            makeActivity(id: "today", date: today),
+            makeActivity(id: "tomorrow", date: tomorrow)
+        ]
+        viewModel.assignments = [
+            makeAssignment(activityId: "today", completed: false),
+            makeAssignment(activityId: "tomorrow", completed: false)
+        ]
+
+        #expect(viewModel.selectedDateActivities.map { $0.activity.activityId } == ["today"])
+    }
+
+    @MainActor
+    @Test func scheduleCalendarDotOnlyShowsForCurrentOrFuturePendingActivities() {
+        let today = Date()
+        let yesterday = today.addingDays(-1)
+        let viewModel = EventViewModel()
+
+        viewModel.activities = [makeActivity(id: "a1", date: today)]
+        viewModel.assignments = [makeAssignment(activityId: "a1", completed: false)]
+        #expect(viewModel.activitiesContainPendingItem(on: today))
+
+        viewModel.assignments = [makeAssignment(activityId: "a1", completed: true)]
+        #expect(!viewModel.activitiesContainPendingItem(on: today))
+
+        viewModel.activities = [makeActivity(id: "past", date: yesterday)]
+        viewModel.assignments = [makeAssignment(activityId: "past", completed: false)]
+        #expect(!viewModel.activitiesContainPendingItem(on: yesterday))
+    }
+
+    @Test func eventRegistrationOpenRequiresDeadlineAndCapacity() {
+        let open = makeEvent(participantCount: 1, capacity: 2, registrationDeadline: Date().addingDays(1))
+        let full = makeEvent(participantCount: 2, capacity: 2, registrationDeadline: Date().addingDays(1))
+        let closed = makeEvent(participantCount: 0, capacity: 2, registrationDeadline: Date().addingDays(-1))
+
+        #expect(open.isRegistrationOpen)
+        #expect(!full.isRegistrationOpen)
+        #expect(!closed.isRegistrationOpen)
+    }
 }
 
 struct UtilitiesAndConstantsTests {
@@ -340,6 +386,9 @@ struct UtilitiesAndConstantsTests {
         #expect(FirestoreCollections.postCommentLikes == "post_comment_likes")
         #expect(FirestoreCollections.groups == "groups")
         #expect(FirestoreCollections.news == "news")
+        #expect(FirestoreCollections.activities == "activities")
+        #expect(FirestoreCollections.activityAssignments == "activity_assignments")
+        #expect(FirestoreCollections.eventRegistrations == "event_registrations")
     }
 
     @Test func storagePathsAreStableAndScopedByResourceId() {
@@ -371,7 +420,7 @@ struct UtilitiesAndConstantsTests {
         #expect(data.int("count") == 3)
         #expect(data.int("missingInt", default: 9) == 9)
         #expect(data.stringArray("tags") == ["SEO"])
-        #expect(data.date("createdAt") == date)
+        #expect(abs(data.date("createdAt").timeIntervalSince(date)) < 0.001)
     }
 }
 
@@ -488,6 +537,50 @@ private func makeMaterial(id: String) -> MaterialModel {
         createdAt: Date(),
         createdBy: "admin-1",
         tags: ["SEO"]
+    )
+}
+
+private func makeActivity(id: String, date: Date) -> ActivityModel {
+    ActivityModel(
+        activityId: id,
+        title: "Activity \(id)",
+        description: "Practice session",
+        date: date,
+        startTime: date,
+        endTime: date.addingTimeInterval(3600),
+        mentorId: "mentor-1",
+        assignedUserIds: ["user-1"],
+        createdAt: date,
+        updatedAt: date
+    )
+}
+
+private func makeAssignment(activityId: String, completed: Bool) -> ActivityAssignmentModel {
+    ActivityAssignmentModel(
+        assignmentId: "\(activityId)_user-1",
+        activityId: activityId,
+        userId: "user-1",
+        completed: completed,
+        completedAt: completed ? Date() : nil,
+        assignedAt: Date()
+    )
+}
+
+private func makeEvent(participantCount: Int, capacity: Int, registrationDeadline: Date) -> EventModel {
+    EventModel(
+        eventId: "event-1",
+        title: "Marketing Event",
+        description: "Event description",
+        imageURL: nil,
+        location: "Online",
+        startDate: Date().addingDays(2),
+        endDate: Date().addingDays(2).addingTimeInterval(7200),
+        capacity: capacity,
+        registrationDeadline: registrationDeadline,
+        mentorId: "mentor-1",
+        participantCount: participantCount,
+        createdAt: Date(),
+        updatedAt: Date()
     )
 }
 

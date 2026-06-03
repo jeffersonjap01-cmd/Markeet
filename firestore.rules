@@ -25,6 +25,14 @@ service cloud.firestore {
       return hasRole("mentor") || isAdmin();
     }
 
+    function isPlainMentor() {
+      return hasRole("mentor");
+    }
+
+    function isMemberRole() {
+      return hasRole("member") || hasRole("communityUser") || hasRole("defaultUser");
+    }
+
     function isNotBanned() {
       return isSignedIn() && currentUser().bannedStatus == false;
     }
@@ -37,7 +45,7 @@ service cloud.firestore {
 
     function userEditableProfileFieldsOnly() {
       return request.resource.data.diff(resource.data).changedKeys()
-        .hasOnly(["fullName", "bio", "profileImageURL", "fcmToken", "savedMaterials"]);
+        .hasOnly(["fullName", "bio", "profileImageURL", "fcmToken", "savedMaterials", "registeredEvents"]);
     }
 
     match /users/{uid} {
@@ -86,6 +94,40 @@ service cloud.firestore {
       allow update: if isAdmin() || isMentor();
     }
 
+    match /activities/{activityId} {
+      allow read: if isSignedIn()
+        && (
+          isAdmin()
+          || resource.data.mentorId == request.auth.uid
+          || request.auth.uid in resource.data.assignedUserIds
+        );
+      allow create: if isPlainMentor()
+        && request.resource.data.mentorId == request.auth.uid;
+      allow update, delete: if isAdmin()
+        || (isPlainMentor() && resource.data.mentorId == request.auth.uid);
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(["participantCount"]);
+    }
+
+    match /activity_assignments/{assignmentId} {
+      allow read: if isSignedIn()
+        && (
+          isAdmin()
+          || resource.data.mentorId == request.auth.uid
+          || resource.data.userId == request.auth.uid
+        );
+      allow create: if isPlainMentor()
+        && request.resource.data.mentorId == request.auth.uid;
+      allow update: if isAdmin()
+        || (isPlainMentor() && resource.data.mentorId == request.auth.uid)
+        || (
+          resource.data.userId == request.auth.uid
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["completed", "completedAt"])
+        );
+      allow delete: if isAdmin()
+        || (isPlainMentor() && resource.data.mentorId == request.auth.uid);
+    }
+
     match /chats/{chatId} {
       allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
       allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
@@ -111,7 +153,25 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow create: if isPlainMentor()
+        && request.resource.data.mentorId == request.auth.uid;
+      allow update, delete: if isAdmin()
+        || (isPlainMentor() && resource.data.mentorId == request.auth.uid);
+    }
+
+    match /event_registrations/{registrationId} {
+      allow read: if isSignedIn()
+        && (
+          isAdmin()
+          || resource.data.userId == request.auth.uid
+          || resource.data.mentorId == request.auth.uid
+        );
+      allow create: if isMemberRole()
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin()
+        || resource.data.userId == request.auth.uid
+        || (isPlainMentor() && resource.data.mentorId == request.auth.uid);
     }
 
     match /notifications/{notificationId} {

@@ -112,27 +112,6 @@ struct LoginView: View {
                             }
                             .disabled(viewModel.isLoading)
 
-                            // Divider
-                            HStack {
-                                Rectangle().fill(AppTheme.divider).frame(height: 1)
-                                Text("atau")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AppTheme.textTertiary)
-                                    .padding(.horizontal, 8)
-                                Rectangle().fill(AppTheme.divider).frame(height: 1)
-                            }
-
-                            // Apple Sign-In
-                            SignInWithAppleButton(.signIn) { request in
-                                handleAppleRequest(request)
-                            } onCompletion: { result in
-                                Task { await handleAppleCompletion(result) }
-                            }
-                            .signInWithAppleButtonStyle(.black)
-                            .frame(height: 50)
-                            .cornerRadius(AppTheme.Radius.md)
-
-
                             // Register link
                             HStack(spacing: 4) {
                                 Text("Belum punya akun?")

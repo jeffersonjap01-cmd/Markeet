@@ -3,6 +3,9 @@
 
 import SwiftUI
 
+/// Top-level navigation gate.
+/// Routes unauthenticated users to login, admins to admin tabs, and everyone
+/// else to the main app tabs after `SessionManager` loads the Firestore profile.
 struct RootView: View {
     @StateObject private var session = SessionManager()
     @State private var showSplash = true

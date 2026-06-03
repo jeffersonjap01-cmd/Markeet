@@ -1,6 +1,10 @@
 import SwiftUI
 
+/// Comment sheet for a post.
+/// Comments and comment likes are persisted through top-level Firestore collections.
 struct CommentSheet: View {
+
+    // MARK: - Input and State
 
     let postId: String
     let currentUserId: String
@@ -232,6 +236,8 @@ struct CommentSheet: View {
         }
         .presentationDetents([.medium, .large])
     }
+
+    // MARK: - Firestore Loading
 
     @MainActor
     private func loadComments() async {

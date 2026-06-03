@@ -6,7 +6,12 @@ import CryptoKit
 import FirebaseAuth
 import SwiftUI
 
+/// Login screen for email/password and Apple sign-in.
+/// Successful authentication reloads `SessionManager`, which then chooses the
+/// correct admin or regular navigation flow.
 struct LoginView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = AuthViewModel()
     @State private var showingRegister    = false
@@ -111,27 +116,6 @@ struct LoginView: View {
                                 .primaryButton()
                             }
                             .disabled(viewModel.isLoading)
-
-                            // Divider
-                            HStack {
-                                Rectangle().fill(AppTheme.divider).frame(height: 1)
-                                Text("atau")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AppTheme.textTertiary)
-                                    .padding(.horizontal, 8)
-                                Rectangle().fill(AppTheme.divider).frame(height: 1)
-                            }
-
-                            // Apple Sign-In
-                            SignInWithAppleButton(.signIn) { request in
-                                handleAppleRequest(request)
-                            } onCompletion: { result in
-                                Task { await handleAppleCompletion(result) }
-                            }
-                            .signInWithAppleButtonStyle(.black)
-                            .frame(height: 50)
-                            .cornerRadius(AppTheme.Radius.md)
-
 
                             // Register link
                             HStack(spacing: 4) {

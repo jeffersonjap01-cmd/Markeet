@@ -1,12 +1,16 @@
 import FirebaseFirestore
 import Foundation
 
+/// One-time helper for creating the first admin account.
+/// After an admin exists, role management should happen inside the admin UI.
 final class AdminBootstrapService {
     static let shared = AdminBootstrapService()
 
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Bootstrap Operations
 
     func bootstrapCurrentUserAsFirstAdmin(uid: String) async throws {
         guard try await hasNoAdminUsers() else {
@@ -26,6 +30,8 @@ final class AdminBootstrapService {
         user.role = .admin
         return user
     }
+
+    // MARK: - Admin Existence Check
 
     private func hasNoAdminUsers() async throws -> Bool {
         let snapshot = try await db.collection(FirestoreCollections.users)

@@ -1,12 +1,16 @@
 import FirebaseFirestore
 import Foundation
 
+/// Read-only service for learning materials stored in Firestore.
+/// Saved materials are represented as material ids on `UserModel.savedMaterials`.
 final class MaterialService {
     static let shared = MaterialService()
 
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Material Queries
 
     func fetchMaterials(limit: Int = 30) async throws -> [MaterialModel] {
         let snapshot = try await db.collection(FirestoreCollections.materials)
@@ -30,6 +34,8 @@ final class MaterialService {
 
         return materials.sorted { $0.createdAt > $1.createdAt }
     }
+
+    // MARK: - Firestore Mapping
 
     private func decode(id: String, data: [String: Any]) -> MaterialModel {
         MaterialModel(

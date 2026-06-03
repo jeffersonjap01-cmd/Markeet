@@ -1,6 +1,11 @@
 import SwiftUI
 
+/// Main Schedule tab.
+/// Members see assigned activities and event registration; mentors create
+/// activities/events and manage registered participants.
 struct ScheduleView: View {
+    // MARK: - Dependencies and State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = EventViewModel()
     @State private var visibleMonth = Date()
@@ -84,14 +89,18 @@ struct ScheduleView: View {
                 .environmentObject(session)
             }
             .sheet(isPresented: $showingEventEditor) {
-                ScheduleEventEditorView(
-                    viewModel: viewModel,
-                    event: editingEvent
-                )
-                .environmentObject(session)
+                if let editingEvent {
+                    ScheduleEventEditorView(viewModel: viewModel, mode: .edit(editingEvent))
+                        .environmentObject(session)
+                } else {
+                    ScheduleEventEditorView(viewModel: viewModel, mode: .create)
+                        .environmentObject(session)
+                }
             }
         }
     }
+
+    // MARK: - Header
 
     private var scheduleHeader: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
@@ -141,6 +150,8 @@ struct ScheduleView: View {
             ScheduleMessageCard(message: error, icon: "exclamationmark.triangle.fill", color: AppTheme.error)
         }
     }
+
+    // MARK: - Calendar
 
     private var calendarCard: some View {
         VStack(spacing: AppTheme.Spacing.md) {
@@ -209,6 +220,8 @@ struct ScheduleView: View {
         .cardStyle()
     }
 
+    // MARK: - Activity List
+
     private var activitySection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             SectionHeader(title: isMentor ? "Aktivitas Tanggal Ini" : "Aktivitas Saya", actionTitle: nil)
@@ -248,11 +261,13 @@ struct ScheduleView: View {
         }
     }
 
+    // MARK: - Event List
+
     private var eventSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             SectionHeader(title: isMentor ? "Event Saya" : "Event Tersedia", actionTitle: nil)
 
-            let events = isMentor || isAdmin ? viewModel.visibleEvents : viewModel.visibleEvents.filter { $0.isRegistrationOpen || viewModel.isRegistered(for: $0) }
+            let events = isMentor || isAdmin ? viewModel.mentorManageableEvents : viewModel.visibleEvents.filter { $0.isRegistrationOpen || viewModel.isRegistered(for: $0) }
             if events.isEmpty {
                 EmptyScheduleCard(
                     icon: "megaphone",
@@ -265,10 +280,10 @@ struct ScheduleView: View {
                         NavigationLink {
                             ScheduleEventDetailView(
                                 viewModel: viewModel,
-                                event: event,
+                                eventId: event.eventId,
                                 isMentor: isMentor,
-                                onEdit: {
-                                    editingEvent = event
+                                onEdit: { eventToEdit in
+                                    editingEvent = eventToEdit
                                     showingEventEditor = true
                                 }
                             )
@@ -319,6 +334,7 @@ struct ScheduleView: View {
     }
 }
 
+/// Calendar grid item. `date == nil` represents an empty leading cell.
 private struct CalendarMonthDay: Identifiable {
     let id: Int
     let date: Date?
@@ -350,6 +366,7 @@ private struct CalendarMonthDay: Identifiable {
     }
 }
 
+/// Calendar day cell that shows a red dot when there is pending work.
 private struct CalendarDayCell: View {
     let date: Date
     let isSelected: Bool
@@ -421,6 +438,8 @@ private struct EmptyScheduleCard: View {
     }
 }
 
+/// Shared activity row.
+/// Mentors see participant status; members can toggle their own completion.
 private struct ActivityRow: View {
     let item: ScheduledActivity
     let isMentor: Bool
@@ -729,12 +748,28 @@ private struct ActivityEditorView: View {
     }
 }
 
+/// Keeps create/edit state explicit so an edited event never loses its Firestore id.
+private enum ScheduleEventEditorMode {
+    case create
+    case edit(EventModel)
+
+    var event: EventModel? {
+        if case .edit(let event) = self {
+            return event
+        }
+        return nil
+    }
+}
+
+/// Event creation/edit form used by mentors.
+/// Existing events may be edited for historical corrections, while new events
+/// still require a registration deadline before the start date.
 private struct ScheduleEventEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionManager
     @ObservedObject var viewModel: EventViewModel
 
-    let event: EventModel?
+    let mode: ScheduleEventEditorMode
 
     @State private var title: String
     @State private var description: String
@@ -745,9 +780,14 @@ private struct ScheduleEventEditorView: View {
     @State private var capacity: Int
     @State private var registrationDeadline: Date
 
-    init(viewModel: EventViewModel, event: EventModel?) {
+    private var event: EventModel? {
+        mode.event
+    }
+
+    init(viewModel: EventViewModel, mode: ScheduleEventEditorMode) {
         self.viewModel = viewModel
-        self.event = event
+        self.mode = mode
+        let event = mode.event
         _title = State(initialValue: event?.title ?? "")
         _description = State(initialValue: event?.description ?? "")
         _imageURL = State(initialValue: event?.imageURL ?? "")
@@ -808,7 +848,7 @@ private struct ScheduleEventEditorView: View {
         !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         capacity >= minimumCapacity &&
         endDate > startDate &&
-        registrationDeadline <= startDate
+        (event != nil || registrationDeadline <= startDate)
     }
 
     private func save() async {
@@ -844,23 +884,40 @@ private struct ScheduleEventEditorView: View {
     }
 }
 
+/// Event detail screen.
+/// It resolves the current event from the live listener by id so Firestore edits
+/// are reflected immediately without reopening the screen.
 private struct ScheduleEventDetailView: View {
     @EnvironmentObject private var session: SessionManager
     @ObservedObject var viewModel: EventViewModel
 
-    let event: EventModel
+    let eventId: String
     let isMentor: Bool
-    let onEdit: () -> Void
+    let onEdit: (EventModel) -> Void
+
+    private var event: EventModel? {
+        viewModel.events.first { $0.eventId == eventId }
+    }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-                hero
-                detailsCard
-                actionCard
+        Group {
+            if let event {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
+                        hero(event)
+                        detailsCard(event)
+                        actionCard(event)
+                    }
+                    .padding(AppTheme.Spacing.lg)
+                    .padding(.bottom, 60)
+                }
+            } else {
+                EmptyStateView(
+                    icon: "calendar.badge.exclamationmark",
+                    title: "Event tidak ditemukan",
+                    subtitle: "Event ini mungkin sudah dihapus atau belum selesai dimuat."
+                )
             }
-            .padding(AppTheme.Spacing.lg)
-            .padding(.bottom, 60)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Detail Event")
@@ -869,10 +926,16 @@ private struct ScheduleEventDetailView: View {
             if isMentor {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button("Edit", systemImage: "pencil", action: onEdit)
+                        Button("Edit", systemImage: "pencil") {
+                            if let event {
+                                onEdit(event)
+                            }
+                        }
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             Task {
-                                await viewModel.deleteEvent(event, session: session)
+                                if let event {
+                                    await viewModel.deleteEvent(event, session: session)
+                                }
                             }
                         }
                     } label: {
@@ -882,19 +945,26 @@ private struct ScheduleEventDetailView: View {
             }
         }
         .task {
-            if isMentor {
+            if isMentor, let event {
                 await viewModel.loadParticipants(for: event)
+            }
+        }
+        .onChange(of: event?.eventId) { _, _ in
+            if isMentor, let event {
+                Task {
+                    await viewModel.loadParticipants(for: event)
+                }
             }
         }
     }
 
-    private var hero: some View {
+    private func hero(_ event: EventModel) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             ScheduleEventRow(event: event, isRegistered: viewModel.isRegistered(for: event), isMentor: isMentor)
         }
     }
 
-    private var detailsCard: some View {
+    private func detailsCard(_ event: EventModel) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             SectionHeader(title: "Informasi Event", actionTitle: nil)
             detailRow(icon: "calendar", title: "Mulai", value: event.startDate.formatted(date: .abbreviated, time: .shortened))
@@ -906,7 +976,7 @@ private struct ScheduleEventDetailView: View {
     }
 
     @ViewBuilder
-    private var actionCard: some View {
+    private func actionCard(_ event: EventModel) -> some View {
         if isMentor {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
                 SectionHeader(title: "Peserta", actionTitle: nil)

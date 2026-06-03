@@ -1,5 +1,8 @@
 import Foundation
 
+/// Role values stored on each `users/{uid}` Firestore document.
+/// The role drives root navigation, admin access, mentor-only community/event tools,
+/// and member/default-user behavior throughout the app.
 enum UserRole: String, CaseIterable, Codable, Identifiable {
     case defaultUser
     case member
@@ -37,6 +40,9 @@ enum UserRole: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+/// Firestore-backed user profile for a Firebase Authentication account.
+/// The document id is the Firebase Auth `uid`, and related feature arrays store
+/// lightweight ids instead of embedded documents to match Firestore best practices.
 struct UserModel: Identifiable, Equatable {
     let uid: String
     var id: String { uid }
@@ -56,6 +62,7 @@ struct UserModel: Identifiable, Equatable {
     var bannedStatus: Bool
     var fcmToken: String?
 
+    /// Business rule: a user can belong to at most five communities.
     var canJoinMoreCommunities: Bool {
         assignedCommunities.count < AppConstants.maxJoinedCommunities
     }

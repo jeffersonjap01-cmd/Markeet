@@ -1,6 +1,9 @@
 import FirebaseFirestore
 import Foundation
 
+/// Central Firestore service for `users/{uid}` documents.
+/// UserService owns profile creation, role updates, saved material ids, event ids,
+/// and profile decoding used by almost every feature.
 final class UserService {
     static let shared = UserService()
 
@@ -8,6 +11,11 @@ final class UserService {
 
     private init() {}
 
+    // MARK: - Profile Creation
+
+    /// Creates the Firestore profile after Firebase Auth registration.
+    /// New users always start as `.defaultUser`; admin/mentor/member roles are
+    /// assigned later through admin tools or community joins.
     func createUserProfile(uid: String, fullName: String, email: String) async throws -> UserModel {
         let now = Date()
         let user = UserModel(
@@ -32,6 +40,8 @@ final class UserService {
         try await userDocument(uid).setData(encode(user), merge: false)
         return user
     }
+
+    // MARK: - Reads
 
     func fetchUser(uid: String) async throws -> UserModel {
         let snapshot = try await userDocument(uid).getDocument()
@@ -64,6 +74,10 @@ final class UserService {
         return decode(uid: document.documentID, data: document.data())
     }
 
+    // MARK: - Profile Updates
+
+    /// Updates only user-editable profile fields. Role and membership changes
+    /// are intentionally handled by separate methods to keep permissions clear.
     func updateProfile(uid: String, fullName: String, bio: String, profileImageURL: String?) async throws {
         var data: [String: Any] = [
             "fullName": fullName,
@@ -77,6 +91,8 @@ final class UserService {
         try await userDocument(uid).updateData(data)
     }
 
+    // MARK: - Role and Membership Updates
+
     func updateRole(uid: String, role: UserRole) async throws {
         try await userDocument(uid).updateData(["role": role.rawValue])
     }
@@ -84,6 +100,8 @@ final class UserService {
     func assignCommunities(uid: String, communityIds: [String]) async throws {
         try await userDocument(uid).updateData(["assignedCommunities": communityIds])
     }
+
+    // MARK: - User Preferences
 
     func deactivateOnboarding(uid: String) async throws {
         try await userDocument(uid).updateData(["onboardingActive": false])
@@ -104,6 +122,8 @@ final class UserService {
     func updateFCMToken(uid: String, token: String) async throws {
         try await userDocument(uid).updateData(["fcmToken": token])
     }
+
+    // MARK: - Firebase Helpers
 
     private func userDocument(_ uid: String) -> DocumentReference {
         db.collection(FirestoreCollections.users).document(uid)

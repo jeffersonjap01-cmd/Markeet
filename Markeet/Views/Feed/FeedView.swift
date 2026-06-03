@@ -1,6 +1,11 @@
 import SwiftUI
 
+/// Global Discussion feed.
+/// Posts are fetched from Firestore and converted into `FeedPost` presentation
+/// models so cards can show author information and ownership controls.
 struct FeedView: View {
+
+    // MARK: - State
 
     @EnvironmentObject var session: SessionManager
 
@@ -161,6 +166,7 @@ struct FeedView: View {
 
     // MARK: - Load Posts
 
+    /// Loads posts, skips soft-deleted records, and fetches author profiles for display.
     @MainActor
     private func loadPosts() async {
 

@@ -2,12 +2,16 @@ import FirebaseStorage
 import Foundation
 import UIKit
 
+/// Firebase Storage service for user-uploaded profile images.
+/// The returned download URL is stored on the matching Firestore user profile.
 final class StorageService {
     static let shared = StorageService()
 
     private let storage = Storage.storage()
 
     private init() {}
+
+    // MARK: - Profile Images
 
     func uploadProfileImage(uid: String, image: UIImage) async throws -> String {
         guard let data = image.jpegData(compressionQuality: 0.78) else {

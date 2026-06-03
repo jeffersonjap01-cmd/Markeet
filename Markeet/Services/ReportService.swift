@@ -1,12 +1,17 @@
 import FirebaseFirestore
 import Foundation
 
+/// Admin moderation service for reported global discussion posts.
+/// Reports are stored in `reports`; pending post reports are grouped with their
+/// post and author data for the admin Reports screen.
 final class ReportService {
     static let shared = ReportService()
 
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Admin Report Loading
 
     func fetchReportedPosts() async throws -> [AdminReportedPostModel] {
         let reports = try await fetchPostReports()
@@ -38,6 +43,8 @@ final class ReportService {
         }
     }
 
+    // MARK: - Moderation Actions
+
     func approveReports(for postId: String) async throws {
         try await updateReports(for: postId, status: .accepted)
         try await resetReportCount(for: postId)
@@ -57,6 +64,8 @@ final class ReportService {
         try await PostService.shared.deletePost(postId: postId)
         try await approveReports(for: postId)
     }
+
+    // MARK: - Firestore Helpers
 
     private func fetchReports(targetId: String, targetType: ReportTargetType) async throws -> [ReportModel] {
         let snapshot = try await db.collection(FirestoreCollections.reports)

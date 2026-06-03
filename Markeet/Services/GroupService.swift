@@ -1,6 +1,10 @@
 import FirebaseFirestore
 import Foundation
 
+/// Firestore service for mentor-created communities in the `groups` collection.
+/// It enforces core community business rules before writing: max 5 communities
+/// per user/mentor, max 15 members per group, max 3 mentors per group, and
+/// open/active status for joining.
 final class GroupService {
     static let shared = GroupService()
 
@@ -8,6 +12,10 @@ final class GroupService {
 
     private init() {}
 
+    // MARK: - Community Creation
+
+    /// Creates a community and records the creating mentor as its first mentor.
+    /// The mentor profile is updated in the same batch so both documents stay aligned.
     func createGroup(name: String, description: String, startDate: Date, endDate: Date, tag: String, mentorId: String, status: CommunityStatus) async throws {
         guard !tag.isEmpty else {
             throw GroupServiceError.missingTag
@@ -43,6 +51,8 @@ final class GroupService {
         try await batch.commit()
     }
 
+    // MARK: - Reads and Discovery
+
     func fetchGroups() async throws -> [GroupModel] {
         let snapshot = try await db.collection(FirestoreCollections.groups)
             .getDocuments()
@@ -67,6 +77,7 @@ final class GroupService {
         return normalize(decode(id: snapshot.documentID, data: data))
     }
 
+    /// Search is intentionally tag-based and excludes communities that cannot be joined.
     func searchGroups(tags: Set<String>, user: UserModel) async throws -> [GroupModel] {
         let groups = try await fetchGroups()
         return groups
@@ -93,6 +104,9 @@ final class GroupService {
             .sorted { $0.groupName < $1.groupName }
     }
 
+    // MARK: - Join Rules
+
+    /// Pure validation helper used by UI/tests before attempting the Firestore transaction.
     func canJoin(user: UserModel, group: GroupModel) -> Bool {
         guard group.isOpen,
               !group.members.contains(user.uid),
@@ -108,6 +122,8 @@ final class GroupService {
         return group.members.count < min(group.maxMembers, AppConstants.maxGroupMembers)
     }
 
+    /// Joins a user or mentor to a group in one Firestore transaction.
+    /// Non-mentor users become `.member` when they successfully join.
     func joinGroup(groupId: String, userId: String) async throws {
         try await db.runVoidAsyncTransaction { transaction in
             let userRef = self.db.collection(FirestoreCollections.users).document(userId)
@@ -171,6 +187,8 @@ final class GroupService {
         }
     }
 
+    // MARK: - Mentor Management
+
     func updateGroup(groupId: String, name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, mentorId: String) async throws {
         let group = try await fetchGroup(groupId: groupId)
         guard group.mentors.contains(mentorId) else {
@@ -212,6 +230,8 @@ final class GroupService {
             "registrationOpen": resolvedStatus == .open
         ])
     }
+
+    // MARK: - Firestore Mapping
 
     private func maxCommunities(for role: UserRole) -> Int {
         role == .mentor ? AppConstants.maxMentorCommunities : AppConstants.maxJoinedCommunities

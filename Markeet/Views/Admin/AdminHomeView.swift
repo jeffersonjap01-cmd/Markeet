@@ -1,6 +1,10 @@
 import SwiftUI
 
+/// Admin Home dashboard for creating, editing, and deleting platform news.
+/// All Firestore mutations go through `AdminNewsViewModel` and `NewsService`.
 struct AdminHomeView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = AdminNewsViewModel()
     @State private var editingNews: NewsModel?

@@ -3,7 +3,11 @@
 
 import SwiftUI
 
+/// Registration screen for new accounts.
+/// New users are always created as `.defaultUser` in Firestore.
 struct RegisterView: View {
+    // MARK: - State
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = AuthViewModel()

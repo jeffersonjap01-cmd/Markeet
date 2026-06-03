@@ -1,6 +1,9 @@
 import FirebaseFirestore
 import Foundation
 
+/// Firestore service for global discussion posts.
+/// Posts are stored in the top-level `posts` collection; comments, likes, and
+/// reports are stored in separate top-level collections that reference `postId`.
 final class PostService {
 
     static let shared = PostService()
@@ -9,6 +12,9 @@ final class PostService {
 
     private init() {}
 
+    // MARK: - Post Creation and Loading
+
+    /// Creates a post with initial engagement counters.
     func createPost(
         authorId: String,
         content: String
@@ -72,6 +78,9 @@ final class PostService {
         return decodePost(id: document.documentID, data: data)
     }
 
+    // MARK: - Deletion
+
+    /// Soft-deletes a post so report history and counters remain available for moderation.
     func deletePost(postId: String) async throws {
 
         try await db
@@ -80,6 +89,8 @@ final class PostService {
             .updateData(["deleted": true])
     }
 
+    /// UI hides delete actions for other users, but the service also enforces
+    /// ownership before mutating Firestore.
     func deleteOwnPost(postId: String, requestingUserId: String) async throws {
         guard !requestingUserId.isEmpty else {
             throw PostServiceError.missingUser
@@ -93,6 +104,10 @@ final class PostService {
         try await deletePost(postId: postId)
     }
 
+    // MARK: - Reporting
+
+    /// Sends a post report to the admin moderation queue.
+    /// The transaction prevents self-reports and keeps `reportCount` accurate.
     func reportPost(postId: String, reporterId: String = "", reason: String = "Reported by user") async throws {
         guard !reporterId.isEmpty else {
             throw PostServiceError.missingUser
@@ -149,6 +164,8 @@ final class PostService {
             ], forDocument: postRef)
         }
     }
+
+    // MARK: - Firestore Mapping
 
     private func decodePost(id: String, data: [String: Any]) -> PostModel {
         PostModel(

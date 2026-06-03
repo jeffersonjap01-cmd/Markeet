@@ -3,7 +3,11 @@
 
 import SwiftUI
 
+/// Learning materials list backed by Firestore.
+/// Users can search by text/tag and save materials to their profile.
 struct MaterialsListView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = MaterialsViewModel()
     @State private var searchText = ""

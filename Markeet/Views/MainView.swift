@@ -4,6 +4,8 @@
 
 import SwiftUI
 
+/// Main tab structure for non-admin users.
+/// Admin users are routed to `AdminMainView` before this view is shown.
 struct MainView: View {
     @EnvironmentObject private var session: SessionManager
 

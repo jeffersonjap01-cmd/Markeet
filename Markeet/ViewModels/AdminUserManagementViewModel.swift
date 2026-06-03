@@ -1,12 +1,19 @@
 import Foundation
 
+/// Admin view model for searching registered users and changing roles.
+/// Role updates are written through `UserService` and the current session is
+/// refreshed if the admin edits their own account.
 @MainActor
 final class AdminUserManagementViewModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var users: [UserModel] = []
     @Published var searchText = ""
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var isLoading = false
+
+    // MARK: - Filtering
 
     var filteredUsers: [UserModel] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -18,6 +25,8 @@ final class AdminUserManagementViewModel: ObservableObject {
                 || user.role.displayName.lowercased().contains(query)
         }
     }
+
+    // MARK: - User Loading and Role Updates
 
     func loadUsers() async {
         await run {
@@ -40,6 +49,8 @@ final class AdminUserManagementViewModel: ObservableObject {
             self.successMessage = "\(user.fullName)'s role was updated to \(role.displayName)."
         }
     }
+
+    // MARK: - Shared Async Wrapper
 
     private func run(_ operation: @escaping () async throws -> Void) async {
         isLoading = true

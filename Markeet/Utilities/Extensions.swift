@@ -3,6 +3,8 @@ import Foundation
 import SwiftUI
 
 // MARK: - Color Hex Init
+
+/// Allows design colors to be declared with familiar hex strings.
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -25,6 +27,8 @@ extension Color {
 }
 
 // MARK: - Relative Time
+
+/// Converts dates into compact relative labels for feed-style timestamps.
 extension Date {
     var relativeTimeString: String {
         let formatter = RelativeDateTimeFormatter()
@@ -34,12 +38,20 @@ extension Date {
     }
 }
 
+// MARK: - Date Arithmetic
+
+/// Convenience date arithmetic used by onboarding metadata and tests.
 extension Date {
     func addingDays(_ days: Int) -> Date {
         Calendar.current.date(byAdding: .day, value: days, to: self) ?? self
     }
 }
 
+// MARK: - Firestore Data Helpers
+
+/// Typed dictionary accessors for Firestore document decoding.
+/// These helpers keep service decode methods concise and provide safe defaults
+/// when older documents are missing newer fields.
 extension Dictionary where Key == String, Value == Any {
     func string(_ key: String, default defaultValue: String = "") -> String {
         self[key] as? String ?? defaultValue

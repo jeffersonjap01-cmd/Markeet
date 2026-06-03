@@ -1,11 +1,18 @@
 import Foundation
 
+/// View model for material browsing and saved-material lists.
+/// The material documents are read from Firestore, while saved state is stored
+/// as material ids on the current user's profile.
 @MainActor
 final class MaterialsViewModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var materials: [MaterialModel] = []
     @Published var savedMaterials: [MaterialModel] = []
     @Published var errorMessage: String?
     @Published var isLoading = false
+
+    // MARK: - Loading
 
     func loadMaterials() async {
         await run {
@@ -18,6 +25,8 @@ final class MaterialsViewModel: ObservableObject {
             self.savedMaterials = try await MaterialService.shared.fetchMaterials(ids: user.savedMaterials)
         }
     }
+
+    // MARK: - Save State
 
     func isSaved(_ material: MaterialModel, by user: UserModel?) -> Bool {
         user?.savedMaterials.contains(material.materialId) == true
@@ -38,6 +47,8 @@ final class MaterialsViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Shared Async Wrapper
 
     private func run(_ operation: @escaping () async throws -> Void) async {
         isLoading = true

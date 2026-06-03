@@ -1,12 +1,17 @@
 import FirebaseFirestore
 import Foundation
 
+/// Firestore service for admin-managed home news.
+/// Only admins should call mutation methods; the service verifies the caller's
+/// role from `users/{uid}` before creating, updating, or deleting news.
 final class NewsService {
     static let shared = NewsService()
 
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Admin Mutations
 
     func createNews(title: String, description: String, imageURL: String?, category: String, createdBy: String) async throws {
         try await assertAdmin(uid: createdBy)
@@ -25,6 +30,8 @@ final class NewsService {
 
         try await newsDocument(newsId).setData(encode(news))
     }
+
+    // MARK: - Reads
 
     func fetchNews() async throws -> [NewsModel] {
         let snapshot = try await db.collection(FirestoreCollections.news)
@@ -52,6 +59,8 @@ final class NewsService {
 
         try await newsDocument(newsId).delete()
     }
+
+    // MARK: - Firestore Mapping
 
     private func assertAdmin(uid: String) async throws {
         let user = try await UserService.shared.fetchUser(uid: uid)

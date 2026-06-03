@@ -1,5 +1,6 @@
 import Foundation
 
+/// User-facing validation failures used by authentication and profile forms.
 enum ValidationError: LocalizedError {
     case emptyName
     case invalidEmail
@@ -20,6 +21,8 @@ enum ValidationError: LocalizedError {
     }
 }
 
+/// Shared form validators used before calling Firebase services.
+/// Keeping validation here makes error messages consistent across screens.
 enum Validators {
     static func validateName(_ name: String) throws {
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

@@ -1,11 +1,18 @@
 import Foundation
 
+/// View model for the admin Reports screen.
+/// It loads real pending reports from Firestore and calls `ReportService` for
+/// moderation actions such as approve, reject, delete, and dismiss.
 @MainActor
 final class AdminReportsViewModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var reportedPosts: [AdminReportedPostModel] = []
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var isLoading = false
+
+    // MARK: - Report Loading and Moderation
 
     func loadReports() async {
         await run {
@@ -44,6 +51,8 @@ final class AdminReportsViewModel: ObservableObject {
             self.successMessage = "Report dismissed."
         }
     }
+
+    // MARK: - Shared Async Wrapper
 
     private func run(_ operation: @escaping () async throws -> Void) async {
         isLoading = true

@@ -1,13 +1,20 @@
 import FirebaseAuth
 import Foundation
 
+/// App-wide session object injected into SwiftUI views.
+/// It bridges Firebase Auth state to the Firestore `UserModel`, which is what
+/// the app uses for role-based navigation and permissions.
 @MainActor
 final class SessionManager: ObservableObject {
+    // MARK: - Published State
+
     @Published var currentUser: UserModel?
     @Published var isLoading = true
     @Published var authError: String?
 
     private var listenerHandle: AuthStateDidChangeListenerHandle?
+
+    // MARK: - Lifecycle
 
     init() {
         listenToAuthState()
@@ -19,6 +26,10 @@ final class SessionManager: ObservableObject {
         }
     }
 
+    // MARK: - Authentication Listener
+
+    /// Restores the app session whenever Firebase Auth signs in, signs out,
+    /// or refreshes the current user.
     func listenToAuthState() {
         listenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
             guard let self else { return }
@@ -27,6 +38,8 @@ final class SessionManager: ObservableObject {
             }
         }
     }
+
+    // MARK: - Session Actions
 
     func reloadCurrentUser() async {
         await loadSession(firebaseUser: Auth.auth().currentUser)
@@ -40,6 +53,8 @@ final class SessionManager: ObservableObject {
             authError = error.localizedDescription
         }
     }
+
+    // MARK: - Firestore Profile Loading
 
     private func loadSession(firebaseUser: FirebaseAuth.User?) async {
         isLoading = true

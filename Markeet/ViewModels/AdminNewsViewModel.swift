@@ -1,11 +1,18 @@
 import Foundation
 
+/// Admin Home view model for managing platform news.
+/// Admin-only validation is enforced in `NewsService`; this object focuses on
+/// UI state and refreshing the local list after mutations.
 @MainActor
 final class AdminNewsViewModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var news: [NewsModel] = []
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var isLoading = false
+
+    // MARK: - News Operations
 
     func loadNews() async {
         await run {
@@ -55,6 +62,8 @@ final class AdminNewsViewModel: ObservableObject {
             self.successMessage = "Update deleted."
         }
     }
+
+    // MARK: - Shared Async Wrapper
 
     private func run(_ operation: @escaping () async throws -> Void) async {
         isLoading = true

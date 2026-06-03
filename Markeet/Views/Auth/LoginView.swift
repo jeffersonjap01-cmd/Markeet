@@ -6,7 +6,12 @@ import CryptoKit
 import FirebaseAuth
 import SwiftUI
 
+/// Login screen for email/password and Apple sign-in.
+/// Successful authentication reloads `SessionManager`, which then chooses the
+/// correct admin or regular navigation flow.
 struct LoginView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = AuthViewModel()
     @State private var showingRegister    = false

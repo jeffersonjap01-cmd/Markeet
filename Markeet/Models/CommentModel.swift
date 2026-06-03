@@ -1,5 +1,8 @@
 import Foundation
 
+/// Top-level Firestore comment document for a global discussion post.
+/// Comments reference the parent post by `postId` rather than living in a post
+/// subcollection; this matches the current `post_comments` collection strategy.
 struct CommentModel: Identifiable, Equatable {
 
     let commentId: String

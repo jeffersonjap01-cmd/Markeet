@@ -1,6 +1,8 @@
 import FirebaseFirestore
 import Foundation
 
+/// Handles likes on comments through `post_comment_likes`.
+/// Comment like counts are denormalized on the `post_comments` document.
 final class CommentLikeService {
 
     static let shared = CommentLikeService()
@@ -8,6 +10,8 @@ final class CommentLikeService {
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Comment Like Mutations
 
     func likeComment(
         commentId: String,
@@ -55,6 +59,8 @@ final class CommentLikeService {
                 "likeCount": FieldValue.increment(Int64(-1))
             ])
     }
+
+    // MARK: - Comment Like Queries
 
     func hasLiked(
         commentId: String,

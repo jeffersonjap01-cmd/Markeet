@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Dedicated tab structure for admin users.
+/// Admin navigation is intentionally separate from member and mentor tabs.
 struct AdminMainView: View {
     @EnvironmentObject private var session: SessionManager
 

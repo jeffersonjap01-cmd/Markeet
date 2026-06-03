@@ -3,7 +3,11 @@
 
 import SwiftUI
 
+/// Profile tab for non-admin users.
+/// Shows Firestore profile data, saved-material access, and account actions.
 struct ProfileView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @State private var showingEditProfile    = false
     @State private var showingSavedMaterials = false

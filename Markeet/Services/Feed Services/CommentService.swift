@@ -1,6 +1,8 @@
 import FirebaseFirestore
 import Foundation
 
+/// Handles `post_comments` Firestore documents for global discussion posts.
+/// Comment counts are denormalized onto `posts.commentCount` for faster feed rendering.
 final class CommentService {
 
     static let shared = CommentService()
@@ -9,6 +11,9 @@ final class CommentService {
 
     private init() {}
 
+    // MARK: - Create and Fetch
+
+    /// Creates a comment and increments the parent post's comment counter.
     func createComment(
         postId: String,
         userId: String,
@@ -68,6 +73,9 @@ final class CommentService {
         }
     }
 
+    // MARK: - Soft Delete
+
+    /// Marks a comment as deleted and updates the parent post counter.
     func deleteComment(
         commentId: String,
         postId: String

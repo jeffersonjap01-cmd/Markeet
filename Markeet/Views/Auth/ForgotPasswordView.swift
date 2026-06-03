@@ -3,7 +3,10 @@
 
 import SwiftUI
 
+/// Password reset screen backed by Firebase Authentication.
 struct ForgotPasswordView: View {
+    // MARK: - State
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = AuthViewModel()
     @State private var didSend = false

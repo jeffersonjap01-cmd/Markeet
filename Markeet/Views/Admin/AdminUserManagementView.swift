@@ -1,6 +1,10 @@
 import SwiftUI
 
+/// Admin screen for searching registered users and changing roles.
+/// Role updates are written to Firestore through `AdminUserManagementViewModel`.
 struct AdminUserManagementView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = AdminUserManagementViewModel()
 

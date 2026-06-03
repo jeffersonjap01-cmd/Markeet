@@ -1,6 +1,10 @@
 import FirebaseFirestore
 import Foundation
 
+/// Firebase service for the Schedule module.
+/// Activities, per-user activity assignments, mentor-created events, and event
+/// registrations are stored in separate top-level collections so listeners can
+/// query by mentor id or user id efficiently.
 final class ScheduleService {
     static let shared = ScheduleService()
 
@@ -8,6 +12,10 @@ final class ScheduleService {
 
     private init() {}
 
+    // MARK: - Realtime Listeners
+
+    /// Listens to activities scoped by role: admins see all, mentors see owned
+    /// activities, and members see only activities assigned to their uid.
     func listenActivities(for user: UserModel, onChange: @escaping (Result<[ActivityModel], Error>) -> Void) -> ListenerRegistration {
         let collection = db.collection(FirestoreCollections.activities)
 
@@ -34,6 +42,7 @@ final class ScheduleService {
         }
     }
 
+    /// Listens to completion documents for the current role.
     func listenAssignments(for user: UserModel, onChange: @escaping (Result<[ActivityAssignmentModel], Error>) -> Void) -> ListenerRegistration {
         let collection = db.collection(FirestoreCollections.activityAssignments)
 
@@ -75,6 +84,8 @@ final class ScheduleService {
             }
     }
 
+    /// Event registration visibility is role scoped so mentors can see members
+    /// registered for their events while members see only their own tickets.
     func listenEventRegistrations(for user: UserModel, onChange: @escaping (Result<[EventRegistrationModel], Error>) -> Void) -> ListenerRegistration {
         let collection = db.collection(FirestoreCollections.eventRegistrations)
 
@@ -100,6 +111,9 @@ final class ScheduleService {
         }
     }
 
+    // MARK: - Activity Management
+
+    /// Creates the activity plus one assignment document per selected participant.
     func createActivity(title: String, description: String, date: Date, startTime: Date, endTime: Date, mentorId: String, assignedUserIds: [String]) async throws {
         guard !assignedUserIds.isEmpty else {
             throw ScheduleServiceError.emptyParticipants
@@ -138,6 +152,8 @@ final class ScheduleService {
         try await batch.commit()
     }
 
+    /// Updates activity details and reconciles assignment documents when the
+    /// participant list changes.
     func updateActivity(activity: ActivityModel, title: String, description: String, date: Date, startTime: Date, endTime: Date, assignedUserIds: [String], mentorId: String) async throws {
         guard activity.mentorId == mentorId else {
             throw ScheduleServiceError.mentorRequired
@@ -195,12 +211,15 @@ final class ScheduleService {
         try await batch.commit()
     }
 
+    /// Members update only their own assignment completion status.
     func updateCompletion(activityId: String, userId: String, completed: Bool) async throws {
         try await assignmentDocument(assignmentId(activityId: activityId, userId: userId)).updateData([
             "completed": completed,
             "completedAt": completed ? Timestamp(date: Date()) : NSNull()
         ])
     }
+
+    // MARK: - Event Management
 
     func createEvent(title: String, description: String, imageURL: String?, location: String, startDate: Date, endDate: Date, capacity: Int, registrationDeadline: Date, mentorId: String) async throws {
         guard capacity > 0 else {
@@ -228,6 +247,7 @@ final class ScheduleService {
         try await eventDocument(eventId).setData(encode(event))
     }
 
+    /// Updates a mentor-owned event. Capacity cannot be reduced below current registrations.
     func updateEvent(_ event: EventModel, title: String, description: String, imageURL: String?, location: String, startDate: Date, endDate: Date, capacity: Int, registrationDeadline: Date, mentorId: String) async throws {
         guard event.mentorId == mentorId else {
             throw ScheduleServiceError.mentorRequired
@@ -264,6 +284,10 @@ final class ScheduleService {
         try await batch.commit()
     }
 
+    // MARK: - Event Registration
+
+    /// Registers a member in a transaction so duplicate tickets and over-capacity
+    /// events are rejected using the latest Firestore state.
     func registerForEvent(event: EventModel, userId: String) async throws {
         let registrationId = registrationId(eventId: event.eventId, userId: userId)
         try await db.runVoidAsyncTransaction { transaction in
@@ -307,6 +331,7 @@ final class ScheduleService {
         }
     }
 
+    /// Cancels a registration and keeps both the event counter and user profile array in sync.
     func cancelRegistration(eventId: String, userId: String) async throws {
         let registrationId = registrationId(eventId: eventId, userId: userId)
         try await db.runVoidAsyncTransaction { transaction in
@@ -337,6 +362,8 @@ final class ScheduleService {
         try await cancelRegistration(eventId: eventId, userId: userId)
     }
 
+    // MARK: - Participant Loading
+
     func fetchMentorParticipantCandidates(mentorId: String) async throws -> [UserModel] {
         let groups = try await GroupService.shared.fetchMentorGroups(mentorId: mentorId)
         let memberIds = Array(Set(groups.flatMap(\.members))).sorted()
@@ -364,6 +391,8 @@ final class ScheduleService {
             ($0.user?.fullName ?? "") < ($1.user?.fullName ?? "")
         }
     }
+
+    // MARK: - Firestore References and Mapping
 
     private func fetchEvent(eventId: String) async throws -> EventModel {
         let snapshot = try await eventDocument(eventId).getDocument()

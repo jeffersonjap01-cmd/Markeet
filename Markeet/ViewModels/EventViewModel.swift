@@ -1,8 +1,13 @@
 import FirebaseFirestore
 import Foundation
 
+/// View model for the Schedule tab.
+/// It owns realtime listeners for activities, assignments, events, and event
+/// registrations, then exposes role-specific data to member and mentor UIs.
 @MainActor
 final class EventViewModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var activities: [ActivityModel] = []
     @Published var assignments: [ActivityAssignmentModel] = []
     @Published var events: [EventModel] = []
@@ -16,10 +21,13 @@ final class EventViewModel: ObservableObject {
 
     private var listeners: [ListenerRegistration] = []
 
+    // MARK: - Derived State
+
     var selectedDateActivities: [ScheduledActivity] {
         scheduledActivities(on: selectedDate)
     }
 
+    /// Members should only see upcoming/active event opportunities.
     var visibleEvents: [EventModel] {
         let now = Date()
         return events
@@ -27,6 +35,7 @@ final class EventViewModel: ObservableObject {
             .sorted { $0.startDate < $1.startDate }
     }
 
+    /// Mentors need historical events so participant lists remain available after an event ends.
     var mentorManageableEvents: [EventModel] {
         events.sorted {
             if $0.endDate == $1.endDate {
@@ -42,6 +51,8 @@ final class EventViewModel: ObservableObject {
             .filter { eventIds.contains($0.eventId) }
             .sorted { $0.startDate < $1.startDate }
     }
+
+    // MARK: - Realtime Listener Lifecycle
 
     func start(session: SessionManager) {
         stop()
@@ -97,6 +108,8 @@ final class EventViewModel: ObservableObject {
         listeners = []
     }
 
+    // MARK: - Calendar Helpers
+
     func activitiesContainPendingItem(on date: Date) -> Bool {
         guard !Calendar.current.startOfDay(for: date).isBeforeToday else {
             return false
@@ -122,6 +135,8 @@ final class EventViewModel: ObservableObject {
             }
             .sorted { $0.activity.startTime < $1.activity.startTime }
     }
+
+    // MARK: - Activity Actions
 
     func createActivity(title: String, description: String, date: Date, startTime: Date, endTime: Date, participantIds: [String], session: SessionManager) async {
         await run {
@@ -187,6 +202,8 @@ final class EventViewModel: ObservableObject {
             self.successMessage = completed ? "Activity completed." : "Activity marked incomplete."
         }
     }
+
+    // MARK: - Event Actions
 
     func createEvent(title: String, description: String, imageURL: String?, location: String, startDate: Date, endDate: Date, capacity: Int, registrationDeadline: Date, session: SessionManager) async {
         await run {
@@ -270,6 +287,8 @@ final class EventViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Participant Actions
+
     func loadParticipants(for event: EventModel) async {
         await run {
             self.eventParticipants = try await ScheduleService.shared.fetchEventParticipants(eventId: event.eventId)
@@ -295,6 +314,8 @@ final class EventViewModel: ObservableObject {
     func isRegistered(for event: EventModel) -> Bool {
         registrations.contains { $0.eventId == event.eventId }
     }
+
+    // MARK: - Private Helpers
 
     private func loadParticipantCandidates(mentorId: String) async {
         do {

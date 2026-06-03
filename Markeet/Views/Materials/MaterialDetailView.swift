@@ -3,7 +3,11 @@
 
 import SwiftUI
 
+/// Detail view for one learning material.
+/// Save state is stored as a material id on the current user document.
 struct MaterialDetailView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = MaterialsViewModel()
 

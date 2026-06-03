@@ -1,6 +1,8 @@
 import FirebaseFirestore
 import Foundation
 
+/// Handles post likes in the top-level `post_likes` collection.
+/// The like document id is deterministic (`postId_userId`) to prevent duplicates.
 final class LikeService {
 
     static let shared = LikeService()
@@ -8,6 +10,8 @@ final class LikeService {
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Like Mutations
 
     func likePost(
         postId: String,
@@ -55,6 +59,8 @@ final class LikeService {
                 "likeCount": FieldValue.increment(Int64(-1))
             ])
     }
+
+    // MARK: - Like Queries
 
     func hasLiked(
         postId: String,

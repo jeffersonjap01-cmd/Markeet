@@ -1,5 +1,8 @@
 import Foundation
 
+/// Calendar metadata for a quarterly community batch.
+/// The current product no longer shows first-login onboarding, but batch numbers
+/// are still written to newly created communities for historical grouping.
 struct BatchPeriod: Equatable {
     let batchNumber: Int
     let startDate: Date
@@ -14,10 +17,15 @@ struct BatchPeriod: Equatable {
     }
 }
 
+/// Maintains legacy onboarding metadata that still exists on user documents.
+/// It currently provides batch calculation and quietly deactivates expired
+/// onboarding flags when a session is restored.
 final class OnboardingManager {
     static let shared = OnboardingManager()
 
     private init() {}
+
+    // MARK: - Batch Metadata
 
     func currentBatch(at date: Date = Date()) -> BatchPeriod {
         let calendar = Calendar.current
@@ -46,6 +54,8 @@ final class OnboardingManager {
         let endDate = calendar.date(byAdding: DateComponents(month: 3, day: -1), to: startDate) ?? date
         return BatchPeriod(batchNumber: batchNumber, startDate: startDate, endDate: endDate)
     }
+
+    // MARK: - User Compatibility
 
     func refreshOnboardingIfNeeded(user: UserModel) async -> UserModel {
         guard user.onboardingActive, Date() > user.onboardingEndDate else {

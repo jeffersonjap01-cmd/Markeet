@@ -5,7 +5,12 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+/// Profile editing screen.
+/// If an image is selected, it uploads to Firebase Storage before the Firestore
+/// user profile is updated.
 struct EditProfileView: View {
+    // MARK: - State
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = ProfileViewModel()

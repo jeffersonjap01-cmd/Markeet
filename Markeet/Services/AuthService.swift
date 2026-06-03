@@ -2,15 +2,24 @@ import AuthenticationServices
 import FirebaseAuth
 import Foundation
 
+/// Thin wrapper around Firebase Authentication.
+/// AuthService handles credential-based auth, then delegates profile creation
+/// and loading to `UserService` because app roles and profile data live in Firestore.
 final class AuthService {
     static let shared = AuthService()
 
     private init() {}
 
+    // MARK: - Current Session
+
     var currentUID: String? {
         Auth.auth().currentUser?.uid
     }
 
+    // MARK: - Email Authentication
+
+    /// Creates the Firebase Auth account, sends verification email, and creates
+    /// the matching `users/{uid}` Firestore profile with the default role.
     func register(fullName: String, email: String, password: String) async throws -> UserModel {
         try Validators.validateName(fullName)
         try Validators.validateEmail(email)
@@ -25,6 +34,8 @@ final class AuthService {
         )
     }
 
+    /// Signs in with Firebase Auth, then loads the Firestore profile so banned
+    /// users and role-based navigation can be handled immediately.
     func login(email: String, password: String) async throws -> UserModel {
         try Validators.validateEmail(email)
         try Validators.validatePassword(password)
@@ -39,6 +50,8 @@ final class AuthService {
 
         return user
     }
+
+    // MARK: - Account Recovery
 
     func sendPasswordReset(email: String) async throws {
         try Validators.validateEmail(email)
@@ -56,6 +69,9 @@ final class AuthService {
         try Auth.auth().signOut()
     }
 
+    // MARK: - Provider Authentication
+
+    /// Supports Apple sign-in by creating a Firestore profile on first provider login.
     func signInWithApple(credential: AuthCredential) async throws -> UserModel {
         let result = try await Auth.auth().signIn(with: credential)
         return try await fetchOrCreateProviderProfile(for: result.user)

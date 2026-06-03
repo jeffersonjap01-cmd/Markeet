@@ -7,7 +7,11 @@
 
 import SwiftUI
 
+/// Community tab for group discovery, membership, mentor management, and chat.
+/// The active implementation is Firebase-backed through `GroupViewModel`.
 struct ComunityView: View {
+    // MARK: - Dependencies and State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = GroupViewModel()
     @State private var showingSearch = false
@@ -136,6 +140,8 @@ struct ComunityView: View {
         }
     }
 
+    // MARK: - Community Rows
+
     private func communityListRow(_ group: GroupModel) -> some View {
         HStack(spacing: 12) {
             Circle()
@@ -175,6 +181,9 @@ struct ComunityView: View {
     }
 }
 
+/// Tag-based search sheet.
+/// Results are filtered by backend business rules so users only see communities
+/// that are open, active, not full, and not already joined.
 private struct CommunitySearchView: View {
     @EnvironmentObject private var session: SessionManager
     @Environment(\.dismiss) private var dismiss
@@ -264,6 +273,8 @@ private struct CommunitySearchView: View {
     }
 }
 
+/// Shared form for creating and editing mentor communities.
+/// The UI collects one tag; the service persists both `tag` and `[tag]`.
 private struct CommunityEditorView: View {
     let title: String
     var group: GroupModel?
@@ -340,6 +351,8 @@ private struct CommunityEditorView: View {
     }
 }
 
+/// Mentor-only management screen for an owned community.
+/// Mentors can edit metadata, open/close the community, and enter the group chat.
 private struct MentorCommunityManageView: View {
     let group: GroupModel
     @ObservedObject var viewModel: GroupViewModel
@@ -401,6 +414,7 @@ private struct MentorCommunityManageView: View {
     }
 }
 
+/// Realtime group chat backed by `chats/{groupId}/messages`.
 struct GroupChatView: View {
     let group: GroupModel
     @EnvironmentObject private var session: SessionManager

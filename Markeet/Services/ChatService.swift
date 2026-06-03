@@ -1,12 +1,17 @@
 import FirebaseFirestore
 import Foundation
 
+/// Realtime Firestore service for community chat.
+/// Messages are stored under `chats/{groupId}/messages`, where `groupId` is the
+/// same id as the community document.
 final class ChatService {
     static let shared = ChatService()
 
     private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Realtime Listening
 
     func listenToMessages(groupId: String, onChange: @escaping ([MessageModel]) -> Void) -> ListenerRegistration {
         messagesCollection(groupId: groupId)
@@ -18,6 +23,8 @@ final class ChatService {
                 onChange(messages.filter { !$0.deleted })
             }
     }
+
+    // MARK: - Sending Messages
 
     func sendMessage(groupId: String, senderId: String, senderName: String, content: String) async throws {
         let messageId = UUID().uuidString
@@ -34,6 +41,8 @@ final class ChatService {
             .document(messageId)
             .setData(data)
     }
+
+    // MARK: - Firestore Mapping
 
     private func messagesCollection(groupId: String) -> CollectionReference {
         db.collection(FirestoreCollections.chats)

@@ -3,7 +3,10 @@
 
 import SwiftUI
 
+/// Shows materials whose ids are stored in `UserModel.savedMaterials`.
 struct SavedMaterialsView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = MaterialsViewModel()
     @Environment(\.dismiss) private var dismiss

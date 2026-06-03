@@ -1,5 +1,7 @@
 import Foundation
 
+/// Central list of Firestore collection names used by services.
+/// Keeping names here avoids accidental mismatches such as `likes` vs `post_likes`.
 enum FirestoreCollections {
     static let users = "users"
     static let posts = "posts"
@@ -18,6 +20,9 @@ enum FirestoreCollections {
     static let eventRegistrations = "event_registrations"
 }
 
+/// Firebase Storage path helpers.
+/// Only profile image upload is currently implemented; material paths are kept
+/// for stored URLs and future upload flows.
 enum StoragePaths {
     static func profileImage(uid: String) -> String {
         "profileImages/\(uid)/profile.jpg"
@@ -32,6 +37,8 @@ enum StoragePaths {
     }
 }
 
+/// Product-wide business constants.
+/// Community and mentor limits are enforced in services and mirrored in UI validation.
 enum AppConstants {
     static let onboardingDays = 7
     static let maxJoinedCommunities = 5

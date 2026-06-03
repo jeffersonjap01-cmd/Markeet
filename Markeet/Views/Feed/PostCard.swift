@@ -1,6 +1,10 @@
 import SwiftUI
 
+/// Card UI for one global discussion post.
+/// Owners can delete their own posts; other users can report posts for admin review.
 struct PostCard: View {
+
+    // MARK: - Input and Local UI State
 
     var post: FeedPost
     var currentUserId: String
@@ -28,6 +32,8 @@ struct PostCard: View {
         _likes = State(initialValue: post.likes)
         _comments = State(initialValue: post.comments)
     }
+
+    // MARK: - Body
 
     var body: some View {
 

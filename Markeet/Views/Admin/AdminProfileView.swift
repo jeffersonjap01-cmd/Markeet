@@ -1,6 +1,10 @@
 import SwiftUI
 
+/// Simplified admin profile screen.
+/// Admin-only tools are grouped here: user management, reports, settings, and logout.
 struct AdminProfileView: View {
+    // MARK: - State
+
     @EnvironmentObject private var session: SessionManager
     @State private var showingLogoutAlert = false
 
@@ -76,6 +80,8 @@ struct AdminProfileView: View {
             }
         }
     }
+
+    // MARK: - Menu Row
 
     private func adminRow(icon: String, title: String, color: Color) -> some View {
         HStack(spacing: 14) {

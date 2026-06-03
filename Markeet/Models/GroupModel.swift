@@ -1,5 +1,7 @@
 import Foundation
 
+/// Lifecycle state for a mentor-created community.
+/// Closed and expired communities are intentionally hidden from search/join flows.
 enum CommunityStatus: String, Codable, CaseIterable, Identifiable {
     case open
     case closed
@@ -19,6 +21,9 @@ enum CommunityStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// Represents a community/group that users can join and mentors can manage.
+/// Membership is stored as arrays of user ids so Firestore can update joins with
+/// `arrayUnion` while keeping the user profile and group document in sync.
 struct GroupModel: Identifiable, Equatable {
     let groupId: String
     var id: String { groupId }
@@ -42,6 +47,8 @@ struct GroupModel: Identifiable, Equatable {
         Date() <= endDate
     }
 
+    /// Search and join flows use this computed value to enforce the current rules:
+    /// open status, registration enabled, and active date range.
     var isOpen: Bool {
         status == .open && registrationOpen && isActive
     }

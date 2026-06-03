@@ -7,7 +7,11 @@
 
 import SwiftUI
 
+/// Home tab for regular users.
+/// Displays admin-managed news loaded from Firestore.
 struct HomeView: View {
+    // MARK: - State
+
     @StateObject private var viewModel = NewsViewModel()
 
     var body: some View {

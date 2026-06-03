@@ -1,5 +1,8 @@
 import Foundation
 
+/// Mentor-created schedule activity stored in `activities`.
+/// The activity owns high-level details and the list of assigned users, while
+/// per-user completion is tracked separately in `activity_assignments`.
 struct ActivityModel: Identifiable, Equatable {
     let activityId: String
     var id: String { activityId }
@@ -14,6 +17,8 @@ struct ActivityModel: Identifiable, Equatable {
     var updatedAt: Date
 }
 
+/// Per-user activity assignment document.
+/// This keeps completion status independent for every assigned member.
 struct ActivityAssignmentModel: Identifiable, Equatable {
     let assignmentId: String
     var id: String { assignmentId }
@@ -24,6 +29,8 @@ struct ActivityAssignmentModel: Identifiable, Equatable {
     var assignedAt: Date
 }
 
+/// UI-friendly pairing of an activity with the current user's assignment.
+/// Calendar dots and activity completion buttons are based on this combined view.
 struct ScheduledActivity: Identifiable, Equatable {
     var id: String { activity.activityId }
     var activity: ActivityModel

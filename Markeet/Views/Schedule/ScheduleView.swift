@@ -1,6 +1,11 @@
 import SwiftUI
 
+/// Main Schedule tab.
+/// Members see assigned activities and event registration; mentors create
+/// activities/events and manage registered participants.
 struct ScheduleView: View {
+    // MARK: - Dependencies and State
+
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = EventViewModel()
     @State private var visibleMonth = Date()
@@ -95,6 +100,8 @@ struct ScheduleView: View {
         }
     }
 
+    // MARK: - Header
+
     private var scheduleHeader: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             HStack(alignment: .top) {
@@ -143,6 +150,8 @@ struct ScheduleView: View {
             ScheduleMessageCard(message: error, icon: "exclamationmark.triangle.fill", color: AppTheme.error)
         }
     }
+
+    // MARK: - Calendar
 
     private var calendarCard: some View {
         VStack(spacing: AppTheme.Spacing.md) {
@@ -211,6 +220,8 @@ struct ScheduleView: View {
         .cardStyle()
     }
 
+    // MARK: - Activity List
+
     private var activitySection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             SectionHeader(title: isMentor ? "Aktivitas Tanggal Ini" : "Aktivitas Saya", actionTitle: nil)
@@ -249,6 +260,8 @@ struct ScheduleView: View {
             }
         }
     }
+
+    // MARK: - Event List
 
     private var eventSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
@@ -321,6 +334,7 @@ struct ScheduleView: View {
     }
 }
 
+/// Calendar grid item. `date == nil` represents an empty leading cell.
 private struct CalendarMonthDay: Identifiable {
     let id: Int
     let date: Date?
@@ -352,6 +366,7 @@ private struct CalendarMonthDay: Identifiable {
     }
 }
 
+/// Calendar day cell that shows a red dot when there is pending work.
 private struct CalendarDayCell: View {
     let date: Date
     let isSelected: Bool
@@ -423,6 +438,8 @@ private struct EmptyScheduleCard: View {
     }
 }
 
+/// Shared activity row.
+/// Mentors see participant status; members can toggle their own completion.
 private struct ActivityRow: View {
     let item: ScheduledActivity
     let isMentor: Bool
@@ -731,6 +748,7 @@ private struct ActivityEditorView: View {
     }
 }
 
+/// Keeps create/edit state explicit so an edited event never loses its Firestore id.
 private enum ScheduleEventEditorMode {
     case create
     case edit(EventModel)
@@ -743,6 +761,9 @@ private enum ScheduleEventEditorMode {
     }
 }
 
+/// Event creation/edit form used by mentors.
+/// Existing events may be edited for historical corrections, while new events
+/// still require a registration deadline before the start date.
 private struct ScheduleEventEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionManager
@@ -863,6 +884,9 @@ private struct ScheduleEventEditorView: View {
     }
 }
 
+/// Event detail screen.
+/// It resolves the current event from the live listener by id so Firestore edits
+/// are reflected immediately without reopening the screen.
 private struct ScheduleEventDetailView: View {
     @EnvironmentObject private var session: SessionManager
     @ObservedObject var viewModel: EventViewModel

@@ -1,7 +1,12 @@
 import Foundation
 
+/// View model for login, registration, and password reset forms.
+/// It validates user input, calls Firebase Auth through `AuthService`, and asks
+/// `SessionManager` to reload the Firestore profile after authentication.
 @MainActor
 final class AuthViewModel: ObservableObject {
+    // MARK: - Form State
+
     @Published var fullName = ""
     @Published var email = ""
     @Published var password = ""
@@ -9,6 +14,8 @@ final class AuthViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var isLoading = false
+
+    // MARK: - Authentication Actions
 
     func login(session: SessionManager) async {
         await run {
@@ -32,6 +39,8 @@ final class AuthViewModel: ObservableObject {
             self.successMessage = "Password reset email sent."
         }
     }
+
+    // MARK: - Shared Async Wrapper
 
     private func run(_ operation: @escaping () async throws -> Void) async {
         isLoading = true

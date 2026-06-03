@@ -1,7 +1,12 @@
 import Foundation
 
+/// State and business logic for the Community tab.
+/// It loads joined communities, mentor-owned communities, tag search results,
+/// and delegates all Firestore writes to `GroupService`.
 @MainActor
 final class GroupViewModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var joinedGroups: [GroupModel] = []
     @Published var mentorGroups: [GroupModel] = []
     @Published var searchResults: [GroupModel] = []
@@ -9,6 +14,8 @@ final class GroupViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var isLoading = false
+
+    // MARK: - Loading
 
     func load(session: SessionManager) async {
         await run {
@@ -25,6 +32,8 @@ final class GroupViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Search
 
     func toggleTag(_ tag: String) {
         if selectedTags.contains(tag) {
@@ -44,6 +53,8 @@ final class GroupViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Membership
+
     func join(_ group: GroupModel, session: SessionManager) async {
         await run {
             guard let userId = session.currentUser?.uid else {
@@ -57,6 +68,8 @@ final class GroupViewModel: ObservableObject {
             await self.search(session: session)
         }
     }
+
+    // MARK: - Mentor Management
 
     func createCommunity(name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, session: SessionManager) async {
         await run {
@@ -111,6 +124,8 @@ final class GroupViewModel: ObservableObject {
             await self.load(session: session)
         }
     }
+
+    // MARK: - Shared Async Wrapper
 
     private func run(_ operation: @escaping () async throws -> Void) async {
         isLoading = true

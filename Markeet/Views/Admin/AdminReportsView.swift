@@ -1,6 +1,10 @@
 import SwiftUI
 
+/// Admin report moderation screen.
+/// Displays pending post reports from Firestore and exposes moderation actions.
 struct AdminReportsView: View {
+    // MARK: - State
+
     @StateObject private var viewModel = AdminReportsViewModel()
 
     var body: some View {

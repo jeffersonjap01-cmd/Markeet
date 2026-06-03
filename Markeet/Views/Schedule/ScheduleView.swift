@@ -84,11 +84,13 @@ struct ScheduleView: View {
                 .environmentObject(session)
             }
             .sheet(isPresented: $showingEventEditor) {
-                ScheduleEventEditorView(
-                    viewModel: viewModel,
-                    event: editingEvent
-                )
-                .environmentObject(session)
+                if let editingEvent {
+                    ScheduleEventEditorView(viewModel: viewModel, mode: .edit(editingEvent))
+                        .environmentObject(session)
+                } else {
+                    ScheduleEventEditorView(viewModel: viewModel, mode: .create)
+                        .environmentObject(session)
+                }
             }
         }
     }
@@ -252,7 +254,7 @@ struct ScheduleView: View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             SectionHeader(title: isMentor ? "Event Saya" : "Event Tersedia", actionTitle: nil)
 
-            let events = isMentor || isAdmin ? viewModel.visibleEvents : viewModel.visibleEvents.filter { $0.isRegistrationOpen || viewModel.isRegistered(for: $0) }
+            let events = isMentor || isAdmin ? viewModel.mentorManageableEvents : viewModel.visibleEvents.filter { $0.isRegistrationOpen || viewModel.isRegistered(for: $0) }
             if events.isEmpty {
                 EmptyScheduleCard(
                     icon: "megaphone",
@@ -265,10 +267,10 @@ struct ScheduleView: View {
                         NavigationLink {
                             ScheduleEventDetailView(
                                 viewModel: viewModel,
-                                event: event,
+                                eventId: event.eventId,
                                 isMentor: isMentor,
-                                onEdit: {
-                                    editingEvent = event
+                                onEdit: { eventToEdit in
+                                    editingEvent = eventToEdit
                                     showingEventEditor = true
                                 }
                             )
@@ -729,12 +731,24 @@ private struct ActivityEditorView: View {
     }
 }
 
+private enum ScheduleEventEditorMode {
+    case create
+    case edit(EventModel)
+
+    var event: EventModel? {
+        if case .edit(let event) = self {
+            return event
+        }
+        return nil
+    }
+}
+
 private struct ScheduleEventEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var session: SessionManager
     @ObservedObject var viewModel: EventViewModel
 
-    let event: EventModel?
+    let mode: ScheduleEventEditorMode
 
     @State private var title: String
     @State private var description: String
@@ -745,9 +759,14 @@ private struct ScheduleEventEditorView: View {
     @State private var capacity: Int
     @State private var registrationDeadline: Date
 
-    init(viewModel: EventViewModel, event: EventModel?) {
+    private var event: EventModel? {
+        mode.event
+    }
+
+    init(viewModel: EventViewModel, mode: ScheduleEventEditorMode) {
         self.viewModel = viewModel
-        self.event = event
+        self.mode = mode
+        let event = mode.event
         _title = State(initialValue: event?.title ?? "")
         _description = State(initialValue: event?.description ?? "")
         _imageURL = State(initialValue: event?.imageURL ?? "")
@@ -808,7 +827,7 @@ private struct ScheduleEventEditorView: View {
         !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         capacity >= minimumCapacity &&
         endDate > startDate &&
-        registrationDeadline <= startDate
+        (event != nil || registrationDeadline <= startDate)
     }
 
     private func save() async {
@@ -848,19 +867,33 @@ private struct ScheduleEventDetailView: View {
     @EnvironmentObject private var session: SessionManager
     @ObservedObject var viewModel: EventViewModel
 
-    let event: EventModel
+    let eventId: String
     let isMentor: Bool
-    let onEdit: () -> Void
+    let onEdit: (EventModel) -> Void
+
+    private var event: EventModel? {
+        viewModel.events.first { $0.eventId == eventId }
+    }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-                hero
-                detailsCard
-                actionCard
+        Group {
+            if let event {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
+                        hero(event)
+                        detailsCard(event)
+                        actionCard(event)
+                    }
+                    .padding(AppTheme.Spacing.lg)
+                    .padding(.bottom, 60)
+                }
+            } else {
+                EmptyStateView(
+                    icon: "calendar.badge.exclamationmark",
+                    title: "Event tidak ditemukan",
+                    subtitle: "Event ini mungkin sudah dihapus atau belum selesai dimuat."
+                )
             }
-            .padding(AppTheme.Spacing.lg)
-            .padding(.bottom, 60)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Detail Event")
@@ -869,10 +902,16 @@ private struct ScheduleEventDetailView: View {
             if isMentor {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button("Edit", systemImage: "pencil", action: onEdit)
+                        Button("Edit", systemImage: "pencil") {
+                            if let event {
+                                onEdit(event)
+                            }
+                        }
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             Task {
-                                await viewModel.deleteEvent(event, session: session)
+                                if let event {
+                                    await viewModel.deleteEvent(event, session: session)
+                                }
                             }
                         }
                     } label: {
@@ -882,19 +921,26 @@ private struct ScheduleEventDetailView: View {
             }
         }
         .task {
-            if isMentor {
+            if isMentor, let event {
                 await viewModel.loadParticipants(for: event)
+            }
+        }
+        .onChange(of: event?.eventId) { _, _ in
+            if isMentor, let event {
+                Task {
+                    await viewModel.loadParticipants(for: event)
+                }
             }
         }
     }
 
-    private var hero: some View {
+    private func hero(_ event: EventModel) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             ScheduleEventRow(event: event, isRegistered: viewModel.isRegistered(for: event), isMentor: isMentor)
         }
     }
 
-    private var detailsCard: some View {
+    private func detailsCard(_ event: EventModel) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             SectionHeader(title: "Informasi Event", actionTitle: nil)
             detailRow(icon: "calendar", title: "Mulai", value: event.startDate.formatted(date: .abbreviated, time: .shortened))
@@ -906,7 +952,7 @@ private struct ScheduleEventDetailView: View {
     }
 
     @ViewBuilder
-    private var actionCard: some View {
+    private func actionCard(_ event: EventModel) -> some View {
         if isMentor {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
                 SectionHeader(title: "Peserta", actionTitle: nil)

@@ -27,6 +27,15 @@ final class EventViewModel: ObservableObject {
             .sorted { $0.startDate < $1.startDate }
     }
 
+    var mentorManageableEvents: [EventModel] {
+        events.sorted {
+            if $0.endDate == $1.endDate {
+                return $0.title < $1.title
+            }
+            return $0.endDate > $1.endDate
+        }
+    }
+
     var myRegisteredEvents: [EventModel] {
         let eventIds = Set(registrations.map(\.eventId))
         return events

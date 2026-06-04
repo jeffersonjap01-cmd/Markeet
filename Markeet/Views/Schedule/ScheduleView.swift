@@ -53,27 +53,6 @@ struct ScheduleView: View {
             }
             .navigationTitle("Jadwal")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                if isMentor {
-                    ToolbarItemGroup(placement: .topBarTrailing) {
-                        Button {
-                            editingActivity = nil
-                            showingActivityEditor = true
-                        } label: {
-                            Image(systemName: "calendar.badge.plus")
-                        }
-                        .accessibilityLabel("Tambah Aktivitas")
-
-                        Button {
-                            editingEvent = nil
-                            showingEventEditor = true
-                        } label: {
-                            Image(systemName: "megaphone")
-                        }
-                        .accessibilityLabel("Tambah Event")
-                    }
-                }
-            }
             .onAppear {
                 visibleMonth = viewModel.selectedDate
                 viewModel.start(session: session)

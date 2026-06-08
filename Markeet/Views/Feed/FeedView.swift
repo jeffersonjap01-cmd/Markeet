@@ -31,39 +31,9 @@ struct FeedView: View {
         VStack(spacing: 0) {
 
             // HEADER
-            HStack {
-
                 Text("Diskusi Global")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-
-                Spacer()
-
-                Button {
-                    showCreatePost = true
-                } label: {
-
-                    HStack(spacing: 6) {
-
-                        Image(systemName: "plus")
-
-                        Text("Post")
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(30)
-                }
-            }
-            .padding()
 
             Divider()
 

@@ -34,6 +34,12 @@ final class UserService {
             savedMaterials: [],
             registeredEvents: [],
             bannedStatus: false,
+            isBanned: false,
+            banReason: nil,
+            banDate: nil,
+            suspensionReason: nil,
+            suspensionStartDate: nil,
+            suspensionEndDate: nil,
             fcmToken: nil
         )
 
@@ -123,6 +129,25 @@ final class UserService {
         try await userDocument(uid).updateData(["fcmToken": token])
     }
 
+    // MARK: - Moderation Status
+
+    func suspendUser(uid: String, reason: String, startDate: Date = Date(), endDate: Date) async throws {
+        try await userDocument(uid).updateData([
+            "suspensionReason": reason,
+            "suspensionStartDate": Timestamp(date: startDate),
+            "suspensionEndDate": Timestamp(date: endDate)
+        ])
+    }
+
+    func banUser(uid: String, reason: String, date: Date = Date()) async throws {
+        try await userDocument(uid).updateData([
+            "isBanned": true,
+            "bannedStatus": true,
+            "banReason": reason,
+            "banDate": Timestamp(date: date)
+        ])
+    }
+
     // MARK: - Firebase Helpers
 
     private func userDocument(_ uid: String) -> DocumentReference {
@@ -146,12 +171,20 @@ final class UserService {
             "savedMaterials": user.savedMaterials,
             "registeredEvents": user.registeredEvents,
             "bannedStatus": user.bannedStatus,
+            "isBanned": user.isBanned,
+            "banReason": user.banReason as Any,
+            "banDate": user.banDate.map(Timestamp.init(date:)) as Any,
+            "suspensionReason": user.suspensionReason as Any,
+            "suspensionStartDate": user.suspensionStartDate.map(Timestamp.init(date:)) as Any,
+            "suspensionEndDate": user.suspensionEndDate.map(Timestamp.init(date:)) as Any,
             "fcmToken": user.fcmToken as Any
         ]
     }
 
     private func decode(uid: String, data: [String: Any]) -> UserModel {
-        UserModel(
+        let bannedStatus = data.bool("bannedStatus") || data.bool("isBanned")
+
+        return UserModel(
             uid: data.string("uid", default: uid),
             fullName: data.string("fullName"),
             email: data.string("email"),
@@ -166,7 +199,13 @@ final class UserService {
             assignedCommunities: data.stringArray("assignedCommunities"),
             savedMaterials: data.stringArray("savedMaterials"),
             registeredEvents: data.stringArray("registeredEvents"),
-            bannedStatus: data.bool("bannedStatus"),
+            bannedStatus: bannedStatus,
+            isBanned: bannedStatus,
+            banReason: data["banReason"] as? String,
+            banDate: data["banDate"] is Timestamp ? data.date("banDate") : nil,
+            suspensionReason: data["suspensionReason"] as? String,
+            suspensionStartDate: data["suspensionStartDate"] is Timestamp ? data.date("suspensionStartDate") : nil,
+            suspensionEndDate: data["suspensionEndDate"] is Timestamp ? data.date("suspensionEndDate") : nil,
             fcmToken: data["fcmToken"] as? String
         )
     }

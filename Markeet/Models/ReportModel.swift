@@ -12,8 +12,22 @@ enum ReportTargetType: String, Codable {
 /// Moderation status stored on each report document.
 enum ReportStatus: String, Codable {
     case pending
+    case underReview
     case accepted
     case rejected
+
+    var displayName: String {
+        switch self {
+        case .pending:
+            "Pending"
+        case .underReview:
+            "Under Review"
+        case .accepted:
+            "Resolved"
+        case .rejected:
+            "Rejected"
+        }
+    }
 }
 
 /// Firestore report submitted by a user.

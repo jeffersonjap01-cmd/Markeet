@@ -78,23 +78,6 @@ struct ComunityView: View {
                     }
                 }
 
-                if session.currentUser?.role == .mentor {
-                    Section("Mentor Communities") {
-                        if viewModel.mentorGroups.isEmpty && !viewModel.isLoading {
-                            Text("Communities you create will appear here.")
-                                .foregroundColor(AppTheme.textSecondary)
-                        }
-
-                        ForEach(viewModel.mentorGroups) { group in
-                            NavigationLink {
-                                MentorCommunityManageView(group: group, viewModel: viewModel)
-                                    .environmentObject(session)
-                            } label: {
-                                communityListRow(group)
-                            }
-                        }
-                    }
-                }
             }
             .navigationTitle("Community")
             .navigationBarTitleDisplayMode(.inline)
@@ -125,7 +108,7 @@ struct ComunityView: View {
                     .environmentObject(session)
             }
             .sheet(isPresented: $showingCreate) {
-                CommunityEditorView(title: "Create Community") { name, description, startDate, endDate, tag, status in
+                CommunityEditorView(title: "Create Community") { name, description, startDate, endDate, tag, status, rules, imageURL in
                     await viewModel.createCommunity(
                         name: name,
                         description: description,
@@ -133,6 +116,8 @@ struct ComunityView: View {
                         endDate: endDate,
                         tag: tag,
                         status: status,
+                        rules: rules,
+                        imageURL: imageURL,
                         session: session
                     )
                 }
@@ -144,14 +129,7 @@ struct ComunityView: View {
 
     private func communityListRow(_ group: GroupModel) -> some View {
         HStack(spacing: 12) {
-            Circle()
-                .fill(AppTheme.primary)
-                .frame(width: 50, height: 50)
-                .overlay {
-                    Text(initials(group.groupName))
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.white)
-                }
+            GroupAvatarView(group: group, size: 50)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(group.groupName)
@@ -168,6 +146,42 @@ struct ComunityView: View {
             RoleBadge(role: group.status.displayName, color: group.status == .open ? AppTheme.success : AppTheme.textTertiary)
         }
         .padding(.vertical, 6)
+    }
+
+    private func initials(_ text: String) -> String {
+        text
+            .split(separator: " ")
+            .prefix(2)
+            .compactMap { $0.first }
+            .map(String.init)
+            .joined()
+            .uppercased()
+    }
+}
+
+private struct GroupAvatarView: View {
+    let group: GroupModel
+    let size: CGFloat
+
+    var body: some View {
+        AsyncImage(url: group.imageURL.flatMap(URL.init(string:))) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .scaledToFill()
+            default:
+                Circle()
+                    .fill(AppTheme.primary)
+                    .overlay {
+                        Text(initials(group.groupName))
+                            .font(.system(size: size * 0.3, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
     }
 
     private func initials(_ text: String) -> String {
@@ -278,7 +292,7 @@ private struct CommunitySearchView: View {
 private struct CommunityEditorView: View {
     let title: String
     var group: GroupModel?
-    let onSave: (String, String, Date, Date, String, CommunityStatus) async -> Void
+    let onSave: (String, String, Date, Date, String, CommunityStatus, String, String?) async -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
@@ -287,8 +301,10 @@ private struct CommunityEditorView: View {
     @State private var endDate: Date
     @State private var tag: String
     @State private var status: CommunityStatus
+    @State private var rules: String
+    @State private var imageURL: String
 
-    init(title: String, group: GroupModel? = nil, onSave: @escaping (String, String, Date, Date, String, CommunityStatus) async -> Void) {
+    init(title: String, group: GroupModel? = nil, onSave: @escaping (String, String, Date, Date, String, CommunityStatus, String, String?) async -> Void) {
         self.title = title
         self.group = group
         self.onSave = onSave
@@ -298,6 +314,8 @@ private struct CommunityEditorView: View {
         _endDate = State(initialValue: group?.endDate ?? Date().addingDays(30))
         _tag = State(initialValue: group?.tag ?? AppConstants.marketingInterests.first ?? "")
         _status = State(initialValue: group?.status ?? .open)
+        _rules = State(initialValue: group?.rules ?? "")
+        _imageURL = State(initialValue: group?.imageURL ?? "")
     }
 
     var body: some View {
@@ -306,6 +324,11 @@ private struct CommunityEditorView: View {
                 TextField("Community Name", text: $name)
                 TextField("Description", text: $description, axis: .vertical)
                     .lineLimit(3...5)
+                TextField("Group Rules", text: $rules, axis: .vertical)
+                    .lineLimit(3...6)
+                TextField("Group Image URL", text: $imageURL)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
                 DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
                 DatePicker("End Date", selection: $endDate, displayedComponents: .date)
 
@@ -339,7 +362,9 @@ private struct CommunityEditorView: View {
                                 startDate,
                                 endDate,
                                 tag,
-                                status
+                                status,
+                                rules.trimmingCharacters(in: .whitespacesAndNewlines),
+                                imageURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : imageURL.trimmingCharacters(in: .whitespacesAndNewlines)
                             )
                             dismiss()
                         }
@@ -351,77 +376,26 @@ private struct CommunityEditorView: View {
     }
 }
 
-/// Mentor-only management screen for an owned community.
-/// Mentors can edit metadata, open/close the community, and enter the group chat.
-private struct MentorCommunityManageView: View {
-    let group: GroupModel
-    @ObservedObject var viewModel: GroupViewModel
-    @EnvironmentObject private var session: SessionManager
-    @State private var showingEdit = false
-
-    private var currentGroup: GroupModel {
-        viewModel.mentorGroups.first { $0.groupId == group.groupId } ?? group
-    }
-
-    var body: some View {
-        List {
-            Section("Community") {
-                Text(currentGroup.description)
-                LabeledContent("Tag", value: currentGroup.tag)
-                LabeledContent("Members", value: "\(currentGroup.members.count)/\(min(currentGroup.maxMembers, AppConstants.maxGroupMembers))")
-                LabeledContent("Mentors", value: "\(currentGroup.mentors.count)/\(min(currentGroup.maxMentors, AppConstants.maxGroupMentors))")
-                LabeledContent("Period", value: "\(currentGroup.startDate.formatted(date: .abbreviated, time: .omitted)) - \(currentGroup.endDate.formatted(date: .abbreviated, time: .omitted))")
-                LabeledContent("Status", value: currentGroup.status.displayName)
-            }
-
-            Section {
-                NavigationLink {
-                    GroupChatView(group: currentGroup)
-                        .environmentObject(session)
-                } label: {
-                    Label("Open Chat", systemImage: "message.fill")
-                }
-
-                Button {
-                    showingEdit = true
-                } label: {
-                    Label("Edit Community", systemImage: "pencil")
-                }
-
-                Button(currentGroup.status == .open ? "Close Community" : "Open Community") {
-                    Task {
-                        await viewModel.updateStatus(currentGroup, status: currentGroup.status == .open ? .closed : .open, session: session)
-                    }
-                }
-            }
-        }
-        .navigationTitle(currentGroup.groupName)
-        .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingEdit) {
-            CommunityEditorView(title: "Edit Community", group: currentGroup) { name, description, startDate, endDate, tag, status in
-                await viewModel.updateCommunity(
-                    currentGroup,
-                    name: name,
-                    description: description,
-                    startDate: startDate,
-                    endDate: endDate,
-                    tag: tag,
-                    status: status,
-                    session: session
-                )
-            }
-        }
-    }
-}
-
 /// Realtime group chat backed by `chats/{groupId}/messages`.
 struct GroupChatView: View {
-    let group: GroupModel
+    @State private var group: GroupModel
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = ChatViewModel()
+    @State private var showingGroupInfo = false
+
+    init(group: GroupModel) {
+        _group = State(initialValue: group)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            Button {
+                showingGroupInfo = true
+            } label: {
+                GroupChatHeader(group: group)
+            }
+            .buttonStyle(.plain)
+
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 10) {
@@ -459,10 +433,21 @@ struct GroupChatView: View {
             .padding()
             .background(AppTheme.surface)
         }
-        .navigationTitle(group.groupName)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $showingGroupInfo) {
+            GroupInformationView(group: group) { updatedGroup in
+                group = updatedGroup
+            }
+            .environmentObject(session)
+        }
         .onAppear {
             viewModel.startListening(groupId: group.groupId)
+        }
+        .task {
+            if let latestGroup = try? await GroupService.shared.fetchGroup(groupId: group.groupId) {
+                group = latestGroup
+            }
         }
         .onDisappear {
             viewModel.stopListening()
@@ -501,6 +486,403 @@ struct GroupChatView: View {
                 Spacer(minLength: 40)
             }
         }
+    }
+}
+
+private struct GroupChatHeader: View {
+    let group: GroupModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            GroupAvatarView(group: group, size: 46)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(group.groupName)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .lineLimit(1)
+
+                Text("\(group.members.count) member\(group.members.count == 1 ? "" : "s")")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(AppTheme.textTertiary)
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.vertical, 10)
+        .background(AppTheme.surface)
+        .overlay(alignment: .bottom) {
+            Divider()
+        }
+    }
+}
+
+private struct GroupInformationView: View {
+    let initialGroup: GroupModel
+    let onUpdate: (GroupModel) -> Void
+
+    @EnvironmentObject private var session: SessionManager
+    @StateObject private var viewModel = GroupViewModel()
+    @State private var group: GroupModel
+    @State private var mentor: UserModel?
+    @State private var members: [UserModel] = []
+    @State private var memberSearchText = ""
+    @State private var showingEdit = false
+    @State private var isLoadingDetails = false
+    @State private var groupInfoError: String?
+
+    init(group: GroupModel, onUpdate: @escaping (GroupModel) -> Void) {
+        self.initialGroup = group
+        self.onUpdate = onUpdate
+        _group = State(initialValue: group)
+    }
+
+    private var isMentorManager: Bool {
+        guard let user = session.currentUser else { return false }
+        return user.role == .mentor && group.mentors.contains(user.uid)
+    }
+
+    private var filteredMembers: [UserModel] {
+        let query = memberSearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return members }
+        return members.filter {
+            $0.fullName.lowercased().contains(query) || $0.email.lowercased().contains(query)
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            AppTheme.background.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: AppTheme.Spacing.lg) {
+                    headerSection
+                    messageSection
+                    informationSection
+                    mentorSection
+                    membersSection
+
+                    if isMentorManager {
+                        groupSettingsSection
+                    }
+                }
+                .padding(AppTheme.Spacing.lg)
+                .padding(.bottom, 40)
+            }
+
+            if isLoadingDetails {
+                LoadingOverlay(message: "Loading group information...")
+            }
+        }
+        .navigationTitle("Group Information")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadDetails()
+        }
+        .refreshable {
+            await loadDetails()
+        }
+        .sheet(isPresented: $showingEdit) {
+            CommunityEditorView(title: "Edit Group", group: group) { name, description, startDate, endDate, tag, status, rules, imageURL in
+                await viewModel.updateCommunity(
+                    group,
+                    name: name,
+                    description: description,
+                    startDate: startDate,
+                    endDate: endDate,
+                    tag: tag,
+                    status: status,
+                    rules: rules,
+                    imageURL: imageURL,
+                    session: session
+                )
+                await loadDetails()
+            }
+        }
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: AppTheme.Spacing.md) {
+            GroupAvatarView(group: group, size: 104)
+                .shadow(color: AppTheme.primary.opacity(0.16), radius: 12, y: 5)
+
+            VStack(spacing: 6) {
+                Text(group.groupName)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+
+                Text("\(group.members.count) member\(group.members.count == 1 ? "" : "s")")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(AppTheme.textSecondary)
+
+                RoleBadge(role: group.status.displayName, color: group.status == .open ? AppTheme.success : AppTheme.textTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .cardStyle()
+    }
+
+    @ViewBuilder
+    private var messageSection: some View {
+        if let successMessage = viewModel.successMessage {
+            CommunityMessageCard(message: successMessage, color: AppTheme.success, icon: "checkmark.circle.fill")
+        }
+
+        if let errorMessage = viewModel.errorMessage ?? groupInfoError {
+            CommunityMessageCard(message: errorMessage, color: AppTheme.error, icon: "exclamationmark.triangle.fill")
+        }
+    }
+
+    private var informationSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            SectionHeader(title: "Group Details", actionTitle: nil)
+
+            GroupInfoRow(label: "Description", value: group.description.isEmpty ? "No description provided." : group.description)
+            GroupInfoRow(label: "Category", value: group.tag.isEmpty ? "Not available" : group.tag)
+            GroupInfoRow(label: "Created", value: group.createdAt.formatted(date: .abbreviated, time: .omitted))
+            GroupInfoRow(label: "Period", value: "\(group.startDate.formatted(date: .abbreviated, time: .omitted)) - \(group.endDate.formatted(date: .abbreviated, time: .omitted))")
+            GroupInfoRow(label: "Rules", value: group.rules.isEmpty ? "No group rules have been added." : group.rules)
+        }
+        .cardStyle()
+    }
+
+    private var mentorSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            SectionHeader(title: "Mentor Information", actionTitle: nil)
+
+            if let mentor {
+                HStack(spacing: AppTheme.Spacing.md) {
+                    ProfileAvatarView(urlString: mentor.profileImageURL, size: 44)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(mentor.fullName)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Text(mentor.email)
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+
+                    Spacer()
+                }
+            } else {
+                Text("Mentor information is not available.")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+        }
+        .cardStyle()
+    }
+
+    private var membersSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            HStack {
+                SectionHeader(title: "Members", actionTitle: nil)
+                Spacer()
+                Text("\(members.count)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+
+            TextField("Search members", text: $memberSearchText)
+                .textFieldStyle(.roundedBorder)
+
+            if filteredMembers.isEmpty {
+                EmptyStateView(
+                    icon: "person.3",
+                    title: "No Members",
+                    subtitle: memberSearchText.isEmpty ? "Members will appear here after users join this community." : "No members match your search."
+                )
+            } else {
+                VStack(spacing: AppTheme.Spacing.sm) {
+                    ForEach(filteredMembers) { member in
+                        MemberManagementRow(
+                            member: member,
+                            canRemove: isMentorManager
+                        ) {
+                            Task {
+                                await viewModel.removeMember(member.uid, from: group, session: session)
+                                await loadDetails()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .cardStyle()
+    }
+
+    private var groupSettingsSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            SectionHeader(title: "Group Settings", actionTitle: nil)
+
+            VStack(spacing: AppTheme.Spacing.sm) {
+                Button {
+                    showingEdit = true
+                } label: {
+                    GroupSettingsRow(icon: "pencil", title: "Edit Group Information", color: AppTheme.primary)
+                }
+
+                Button {
+                    showingEdit = true
+                } label: {
+                    GroupSettingsRow(icon: "doc.text", title: "Update Group Rules", color: AppTheme.info)
+                }
+
+                Button {
+                    showingEdit = true
+                } label: {
+                    GroupSettingsRow(icon: "photo", title: "Change Group Image", color: AppTheme.success)
+                }
+            }
+        }
+        .cardStyle()
+    }
+
+    private func loadDetails() async {
+        isLoadingDetails = true
+        groupInfoError = nil
+        defer { isLoadingDetails = false }
+
+        do {
+            let latestGroup = try await GroupService.shared.fetchGroup(groupId: group.groupId)
+            group = latestGroup
+            onUpdate(latestGroup)
+
+            if let mentorId = latestGroup.mentors.first {
+                mentor = try? await UserService.shared.fetchUser(uid: mentorId)
+            }
+
+            var loadedMembers: [UserModel] = []
+            for memberId in latestGroup.members {
+                if let user = try? await UserService.shared.fetchUser(uid: memberId) {
+                    loadedMembers.append(user)
+                }
+            }
+            members = loadedMembers.sorted { $0.fullName < $1.fullName }
+        } catch {
+            groupInfoError = error.localizedDescription
+        }
+    }
+}
+
+private struct GroupInfoRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(AppTheme.textTertiary)
+            Text(value)
+                .font(.system(size: 14))
+                .foregroundColor(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct CommunityMessageCard: View {
+    let message: String
+    let color: Color
+    let icon: String
+
+    var body: some View {
+        HStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: icon)
+                .foregroundColor(color)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(AppTheme.textPrimary)
+
+            Spacer()
+        }
+        .padding(AppTheme.Spacing.md)
+        .background(color.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.md))
+    }
+}
+
+private struct MemberManagementRow: View {
+    let member: UserModel
+    let canRemove: Bool
+    let onRemove: () -> Void
+    @State private var showingRemoveConfirmation = false
+
+    var body: some View {
+        HStack(spacing: AppTheme.Spacing.md) {
+            ProfileAvatarView(urlString: member.profileImageURL, size: 42)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(member.fullName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text(member.email)
+                    .font(.system(size: 12))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+
+            Spacer()
+
+            if canRemove {
+                Button {
+                    showingRemoveConfirmation = true
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(AppTheme.error)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 6)
+        .confirmationDialog(
+            "Remove this member from the group?",
+            isPresented: $showingRemoveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Remove Member", role: .destructive, action: onRemove)
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+}
+
+private struct GroupSettingsRow: View {
+    let icon: String
+    let title: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: AppTheme.Spacing.md) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(color)
+                .frame(width: 34, height: 34)
+                .background(color.opacity(0.12))
+                .clipShape(Circle())
+
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AppTheme.textPrimary)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(AppTheme.textTertiary)
+        }
+        .padding(AppTheme.Spacing.md)
+        .background(AppTheme.background)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.md))
     }
 }
 

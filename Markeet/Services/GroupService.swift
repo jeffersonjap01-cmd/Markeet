@@ -16,7 +16,17 @@ final class GroupService {
 
     /// Creates a community and records the creating mentor as its first mentor.
     /// The mentor profile is updated in the same batch so both documents stay aligned.
-    func createGroup(name: String, description: String, startDate: Date, endDate: Date, tag: String, mentorId: String, status: CommunityStatus) async throws {
+    func createGroup(
+        name: String,
+        description: String,
+        startDate: Date,
+        endDate: Date,
+        tag: String,
+        mentorId: String,
+        status: CommunityStatus,
+        rules: String = "",
+        imageURL: String? = nil
+    ) async throws {
         guard !tag.isEmpty else {
             throw GroupServiceError.missingTag
         }
@@ -34,6 +44,8 @@ final class GroupService {
             registrationOpen: resolvedStatus == .open,
             status: resolvedStatus,
             tag: tag,
+            imageURL: imageURL,
+            rules: rules,
             members: [],
             mentors: [mentorId],
             maxMembers: AppConstants.maxGroupMembers,
@@ -189,7 +201,18 @@ final class GroupService {
 
     // MARK: - Mentor Management
 
-    func updateGroup(groupId: String, name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, mentorId: String) async throws {
+    func updateGroup(
+        groupId: String,
+        name: String,
+        description: String,
+        startDate: Date,
+        endDate: Date,
+        tag: String,
+        status: CommunityStatus,
+        mentorId: String,
+        rules: String = "",
+        imageURL: String? = nil
+    ) async throws {
         let group = try await fetchGroup(groupId: groupId)
         guard group.mentors.contains(mentorId) else {
             throw GroupServiceError.notMentorOwner
@@ -208,9 +231,41 @@ final class GroupService {
             "endDate": Timestamp(date: endDate),
             "tag": tag,
             "tags": [tag],
+            "rules": rules,
+            "imageURL": imageURL as Any,
             "status": resolvedStatus.rawValue,
             "registrationOpen": resolvedStatus == .open
         ])
+    }
+
+    func updateGroupInfo(groupId: String, name: String, description: String, rules: String, imageURL: String?, mentorId: String) async throws {
+        let group = try await fetchGroup(groupId: groupId)
+        guard group.mentors.contains(mentorId) else {
+            throw GroupServiceError.notMentorOwner
+        }
+
+        try await groupDocument(groupId).updateData([
+            "groupName": name,
+            "description": description,
+            "rules": rules,
+            "imageURL": imageURL as Any
+        ])
+    }
+
+    func removeMember(groupId: String, memberId: String, mentorId: String) async throws {
+        let group = try await fetchGroup(groupId: groupId)
+        guard group.mentors.contains(mentorId) else {
+            throw GroupServiceError.notMentorOwner
+        }
+
+        let batch = db.batch()
+        batch.updateData([
+            "members": FieldValue.arrayRemove([memberId])
+        ], forDocument: groupDocument(groupId))
+        batch.updateData([
+            "assignedCommunities": FieldValue.arrayRemove([groupId])
+        ], forDocument: db.collection(FirestoreCollections.users).document(memberId))
+        try await batch.commit()
     }
 
     func updateStatus(groupId: String, status: CommunityStatus, mentorId: String) async throws {
@@ -253,6 +308,8 @@ final class GroupService {
             "status": group.status.rawValue,
             "tag": group.tag,
             "tags": [group.tag],
+            "imageURL": group.imageURL as Any,
+            "rules": group.rules,
             "members": group.members,
             "mentors": group.mentors,
             "maxMembers": group.maxMembers,
@@ -278,6 +335,8 @@ final class GroupService {
             registrationOpen: registrationOpen,
             status: status,
             tag: tag,
+            imageURL: data["imageURL"] as? String,
+            rules: data.string("rules"),
             members: data.stringArray("members"),
             mentors: data.stringArray("mentors"),
             maxMembers: data.int("maxMembers", default: AppConstants.maxGroupMembers),

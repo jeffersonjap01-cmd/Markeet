@@ -12,6 +12,18 @@ struct AdminMainView: View {
                     .environmentObject(session)
             }
 
+            Tab("User Management", systemImage: "person.2.badge.gearshape.fill") {
+                NavigationStack {
+                    AdminUserManagementView()
+                        .environmentObject(session)
+                }
+            }
+
+            Tab("Reports", systemImage: "exclamationmark.bubble.fill") {
+                AdminReportsView()
+                    .environmentObject(session)
+            }
+
             Tab("Profile", systemImage: "person.crop.circle.fill") {
                 AdminProfileView()
                     .environmentObject(session)

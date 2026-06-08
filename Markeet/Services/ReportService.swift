@@ -55,6 +55,10 @@ final class ReportService {
         try await resetReportCount(for: postId)
     }
 
+    func markReportsUnderReview(for postId: String) async throws {
+        try await updateReports(for: postId, status: .underReview)
+    }
+
     func dismissReports(for postId: String) async throws {
         try await updateReports(for: postId, status: .rejected)
         try await resetReportCount(for: postId)
@@ -63,6 +67,63 @@ final class ReportService {
     func deleteReportedPost(postId: String) async throws {
         try await PostService.shared.deletePost(postId: postId)
         try await approveReports(for: postId)
+    }
+
+    func resolveReport(_ item: AdminReportedPostModel, adminId: String) async throws {
+        try await deleteReportedContent(for: item)
+        try await approveReports(for: item.post.postId)
+        try await logModerationAction(
+            actionType: "resolve_report_delete_content",
+            adminId: adminId,
+            targetUserId: item.author?.uid ?? item.post.authorId,
+            reportId: item.reports.first?.reportId ?? item.post.postId,
+            notes: "Reported content was removed and report was resolved."
+        )
+    }
+
+    func rejectReport(_ item: AdminReportedPostModel, adminId: String) async throws {
+        try await rejectReports(for: item.post.postId)
+        try await logModerationAction(
+            actionType: "reject_report",
+            adminId: adminId,
+            targetUserId: item.author?.uid ?? item.post.authorId,
+            reportId: item.reports.first?.reportId ?? item.post.postId,
+            notes: "Report was rejected; reported content was left unchanged."
+        )
+    }
+
+    func suspendReportedUser(_ item: AdminReportedPostModel, adminId: String, days: Int, reason: String) async throws {
+        let targetUserId = item.author?.uid ?? item.post.authorId
+        let startDate = Date()
+        let endDate = startDate.addingDays(days)
+
+        try await UserService.shared.suspendUser(
+            uid: targetUserId,
+            reason: reason,
+            startDate: startDate,
+            endDate: endDate
+        )
+
+        try await logModerationAction(
+            actionType: "temporary_suspend_user",
+            adminId: adminId,
+            targetUserId: targetUserId,
+            reportId: item.reports.first?.reportId ?? item.post.postId,
+            notes: "User suspended for \(days) day\(days == 1 ? "" : "s"). Reason: \(reason)"
+        )
+    }
+
+    func banReportedUser(_ item: AdminReportedPostModel, adminId: String, reason: String) async throws {
+        let targetUserId = item.author?.uid ?? item.post.authorId
+        try await UserService.shared.banUser(uid: targetUserId, reason: reason)
+
+        try await logModerationAction(
+            actionType: "permanent_ban_user",
+            adminId: adminId,
+            targetUserId: targetUserId,
+            reportId: item.reports.first?.reportId ?? item.post.postId,
+            notes: "User permanently banned. Reason: \(reason)"
+        )
     }
 
     // MARK: - Firestore Helpers
@@ -88,7 +149,6 @@ final class ReportService {
             .map { document in
                 decode(id: document.documentID, data: document.data())
             }
-            .filter { $0.status == .pending }
             .sorted { $0.createdAt > $1.createdAt }
     }
 
@@ -109,6 +169,47 @@ final class ReportService {
         try await db.collection(FirestoreCollections.posts)
             .document(postId)
             .updateData(["reportCount": 0])
+    }
+
+    private func deleteReportedContent(for item: AdminReportedPostModel) async throws {
+        let report = item.reports.first
+        switch report?.targetType ?? .post {
+        case .post:
+            try await PostService.shared.deletePost(postId: item.post.postId)
+        case .comment:
+            if let targetId = report?.targetId {
+                try await CommentService.shared.deleteComment(commentId: targetId)
+            }
+        case .chat:
+            if let targetId = report?.targetId {
+                try await deleteChatMessage(messageId: targetId)
+            }
+        }
+    }
+
+    private func deleteChatMessage(messageId: String) async throws {
+        let snapshot = try await db.collectionGroup(FirestoreCollections.messages)
+            .whereField("messageId", isEqualTo: messageId)
+            .getDocuments()
+
+        for document in snapshot.documents {
+            try await document.reference.updateData(["deleted": true])
+        }
+    }
+
+    private func logModerationAction(actionType: String, adminId: String, targetUserId: String, reportId: String, notes: String) async throws {
+        let logId = UUID().uuidString
+        try await db.collection(FirestoreCollections.moderationLogs)
+            .document(logId)
+            .setData([
+                "logId": logId,
+                "actionType": actionType,
+                "adminId": adminId,
+                "targetUserId": targetUserId,
+                "reportId": reportId,
+                "timestamp": Timestamp(date: Date()),
+                "notes": notes
+            ])
     }
 
     private func decode(id: String, data: [String: Any]) -> ReportModel {

@@ -35,6 +35,8 @@ struct GroupModel: Identifiable, Equatable {
     var registrationOpen: Bool
     var status: CommunityStatus
     var tag: String
+    var imageURL: String?
+    var rules: String
     var members: [String]
     var mentors: [String]
     var maxMembers: Int

@@ -73,7 +73,34 @@ final class CommentService {
         }
     }
 
+    func fetchComment(commentId: String) async throws -> CommentModel {
+        let document = try await db
+            .collection(FirestoreCollections.postComments)
+            .document(commentId)
+            .getDocument()
+
+        guard let data = document.data() else {
+            throw CommentServiceError.commentNotFound
+        }
+
+        return CommentModel(
+            commentId: data["commentId"] as? String ?? document.documentID,
+            postId: data["postId"] as? String ?? "",
+            userId: data["userId"] as? String ?? "",
+            userName: data["userName"] as? String ?? "Unknown User",
+            content: data["content"] as? String ?? "",
+            likeCount: data["likeCount"] as? Int ?? 0,
+            createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+            deleted: data["deleted"] as? Bool ?? false
+        )
+    }
+
     // MARK: - Soft Delete
+
+    func deleteComment(commentId: String) async throws {
+        let comment = try await fetchComment(commentId: commentId)
+        try await deleteComment(commentId: comment.commentId, postId: comment.postId)
+    }
 
     /// Marks a comment as deleted and updates the parent post counter.
     func deleteComment(
@@ -94,5 +121,16 @@ final class CommentService {
             .updateData([
                 "commentCount": FieldValue.increment(Int64(-1))
             ])
+    }
+}
+
+enum CommentServiceError: LocalizedError {
+    case commentNotFound
+
+    var errorDescription: String? {
+        switch self {
+        case .commentNotFound:
+            "Comment was not found."
+        }
     }
 }

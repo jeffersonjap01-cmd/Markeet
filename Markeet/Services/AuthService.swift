@@ -48,6 +48,11 @@ final class AuthService {
             throw AuthServiceError.bannedUser
         }
 
+        if user.isSuspended {
+            try signOut()
+            throw AuthServiceError.suspendedUser
+        }
+
         return user
     }
 
@@ -93,12 +98,15 @@ final class AuthService {
 
 enum AuthServiceError: LocalizedError {
     case bannedUser
+    case suspendedUser
     case notSignedIn
 
     var errorDescription: String? {
         switch self {
         case .bannedUser:
             "This account has been banned by an admin."
+        case .suspendedUser:
+            "This account is temporarily suspended."
         case .notSignedIn:
             "Please sign in first."
         }

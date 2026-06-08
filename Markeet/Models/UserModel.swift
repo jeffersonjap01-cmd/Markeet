@@ -60,6 +60,12 @@ struct UserModel: Identifiable, Equatable {
     var savedMaterials: [String]
     var registeredEvents: [String]
     var bannedStatus: Bool
+    var isBanned: Bool
+    var banReason: String?
+    var banDate: Date?
+    var suspensionReason: String?
+    var suspensionStartDate: Date?
+    var suspensionEndDate: Date?
     var fcmToken: String?
 
     /// Business rule: a user can belong to at most five communities.
@@ -75,4 +81,8 @@ struct UserModel: Identifiable, Equatable {
         role.isCommunityMember || !assignedCommunities.isEmpty
     }
 
+    var isSuspended: Bool {
+        guard let suspensionEndDate else { return false }
+        return suspensionEndDate > Date()
+    }
 }

@@ -16,6 +16,10 @@ struct AdminReportedPostModel: Identifiable, Equatable {
             return .pending
         }
 
+        if reports.contains(where: { $0.status == .underReview }) {
+            return .underReview
+        }
+
         if reports.contains(where: { $0.status == .accepted }) {
             return .accepted
         }

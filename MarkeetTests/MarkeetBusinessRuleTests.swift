@@ -420,6 +420,12 @@ private func makeUser(
         savedMaterials: savedMaterials,
         registeredEvents: [],
         bannedStatus: bannedStatus,
+        isBanned: bannedStatus,
+        banReason: nil,
+        banDate: nil,
+        suspensionReason: nil,
+        suspensionStartDate: nil,
+        suspensionEndDate: nil,
         fcmToken: nil
     )
 }
@@ -442,6 +448,8 @@ private func makeGroup(
         registrationOpen: registrationOpen,
         status: status,
         tag: tag,
+        imageURL: nil,
+        rules: "",
         members: members,
         mentors: mentors,
         maxMembers: AppConstants.maxGroupMembers,

@@ -1,57 +1,47 @@
 import SwiftUI
 
 /// Simplified admin profile screen.
-/// Admin-only tools are grouped here: user management, reports, settings, and logout.
+/// Account-focused admin profile screen retained for profile/logout flows.
 struct AdminProfileView: View {
     // MARK: - State
 
     @EnvironmentObject private var session: SessionManager
     @State private var showingLogoutAlert = false
+    @State private var showingEditProfile = false
+    @State private var message: String?
+    @State private var errorMessage: String?
+    @State private var isSendingPasswordReset = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                AppTheme.background.ignoresSafeArea()
 
                 if let user = session.currentUser {
                     ScrollView {
-                        VStack(spacing: AppTheme.Spacing.md) {
-                            VStack(spacing: 12) {
-                                ProfileAvatarView(urlString: user.profileImageURL, size: 90)
+                        VStack(spacing: AppTheme.Spacing.lg) {
+                            profileHeader(user)
+                            messageSection
 
-                                VStack(spacing: 5) {
-                                    Text(user.fullName)
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundColor(AppTheme.textPrimary)
-
-                                    Text(user.email)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(AppTheme.textSecondary)
-
-                                    RoleBadge(role: user.role.displayName, color: AppTheme.roleColor(user.role))
-                                }
-                            }
-                            .padding(.top, AppTheme.Spacing.lg)
-
-                            VStack(spacing: 2) {
-                                NavigationLink {
-                                    AdminUserManagementView()
-                                        .environmentObject(session)
+                            VStack(spacing: AppTheme.Spacing.sm) {
+                                Button {
+                                    showingEditProfile = true
                                 } label: {
-                                    adminRow(icon: "person.2.badge.gearshape.fill", title: "User Management", color: AppTheme.primary)
+                                    adminRow(icon: "square.and.pencil", title: "Edit Profile", color: AppTheme.primary)
                                 }
 
-                                NavigationLink {
-                                    AdminReportsView()
+                                Button {
+                                    Task {
+                                        await sendPasswordReset(to: user.email)
+                                    }
                                 } label: {
-                                    adminRow(icon: "exclamationmark.bubble.fill", title: "Reports", color: AppTheme.warning)
+                                    adminRow(
+                                        icon: "key.fill",
+                                        title: isSendingPasswordReset ? "Sending Reset Link..." : "Change Password",
+                                        color: AppTheme.info
+                                    )
                                 }
-
-                                NavigationLink {
-                                    AdminSettingsView()
-                                } label: {
-                                    adminRow(icon: "gearshape.fill", title: "Settings", color: AppTheme.info)
-                                }
+                                .disabled(isSendingPasswordReset)
 
                                 Button {
                                     showingLogoutAlert = true
@@ -61,6 +51,8 @@ struct AdminProfileView: View {
                             }
                             .padding(.horizontal, AppTheme.Spacing.lg)
                         }
+                        .padding(.top, AppTheme.Spacing.lg)
+                        .padding(.bottom, 90)
                     }
                 } else {
                     EmptyStateView(
@@ -78,6 +70,52 @@ struct AdminProfileView: View {
             } message: {
                 Text("You will need to sign in again to access your account.")
             }
+            .sheet(isPresented: $showingEditProfile) {
+                if let user = session.currentUser {
+                    EditProfileView(user: user)
+                        .environmentObject(session)
+                }
+            }
+        }
+    }
+
+    // MARK: - Profile Sections
+
+    private func profileHeader(_ user: UserModel) -> some View {
+        VStack(spacing: AppTheme.Spacing.md) {
+            ProfileAvatarView(urlString: user.profileImageURL, size: 96)
+                .shadow(color: AppTheme.primary.opacity(0.16), radius: 12, y: 4)
+
+            VStack(spacing: 6) {
+                Text(user.fullName)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+
+                Text(user.email)
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textSecondary)
+
+                RoleBadge(role: user.role.displayName, color: AppTheme.roleColor(user.role))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(AppTheme.Spacing.lg)
+        .background(AppTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.lg))
+        .shadow(color: AppTheme.Shadow.soft, radius: 10, y: 4)
+        .padding(.horizontal, AppTheme.Spacing.lg)
+    }
+
+    @ViewBuilder
+    private var messageSection: some View {
+        if let message {
+            AdminProfileMessageCard(message: message, color: AppTheme.success, icon: "checkmark.circle.fill")
+                .padding(.horizontal, AppTheme.Spacing.lg)
+        }
+
+        if let errorMessage {
+            AdminProfileMessageCard(message: errorMessage, color: AppTheme.error, icon: "exclamationmark.triangle.fill")
+                .padding(.horizontal, AppTheme.Spacing.lg)
         }
     }
 
@@ -109,15 +147,42 @@ struct AdminProfileView: View {
         .background(AppTheme.surface)
         .cornerRadius(AppTheme.Radius.md)
     }
+
+    // MARK: - Security
+
+    private func sendPasswordReset(to email: String) async {
+        isSendingPasswordReset = true
+        message = nil
+        errorMessage = nil
+        defer { isSendingPasswordReset = false }
+
+        do {
+            try await AuthService.shared.sendPasswordReset(email: email)
+            message = "A password reset link has been sent to your email."
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
-struct AdminSettingsView: View {
+private struct AdminProfileMessageCard: View {
+    let message: String
+    let color: Color
+    let icon: String
+
     var body: some View {
-        List {
-            Text("Help and support management")
-            Text("Account suspension controls")
+        HStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: icon)
+                .foregroundColor(color)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(AppTheme.textPrimary)
+
+            Spacer()
         }
-        .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(AppTheme.Spacing.md)
+        .background(color.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.md))
     }
 }

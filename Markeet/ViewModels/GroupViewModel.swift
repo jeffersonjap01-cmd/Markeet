@@ -71,7 +71,7 @@ final class GroupViewModel: ObservableObject {
 
     // MARK: - Mentor Management
 
-    func createCommunity(name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, session: SessionManager) async {
+    func createCommunity(name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, rules: String = "", imageURL: String? = nil, session: SessionManager) async {
         await run {
             guard let user = session.currentUser, user.role == .mentor else {
                 throw GroupViewModelError.mentorRequired
@@ -84,7 +84,9 @@ final class GroupViewModel: ObservableObject {
                 endDate: endDate,
                 tag: tag,
                 mentorId: user.uid,
-                status: status
+                status: status,
+                rules: rules,
+                imageURL: imageURL
             )
             await session.reloadCurrentUser()
             self.successMessage = "Community created."
@@ -92,7 +94,7 @@ final class GroupViewModel: ObservableObject {
         }
     }
 
-    func updateCommunity(_ group: GroupModel, name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, session: SessionManager) async {
+    func updateCommunity(_ group: GroupModel, name: String, description: String, startDate: Date, endDate: Date, tag: String, status: CommunityStatus, rules: String = "", imageURL: String? = nil, session: SessionManager) async {
         await run {
             guard let user = session.currentUser else {
                 throw GroupViewModelError.missingUser
@@ -106,9 +108,30 @@ final class GroupViewModel: ObservableObject {
                 endDate: endDate,
                 tag: tag,
                 status: status,
-                mentorId: user.uid
+                mentorId: user.uid,
+                rules: rules,
+                imageURL: imageURL
             )
             self.successMessage = "Community updated."
+            await self.load(session: session)
+        }
+    }
+
+    func updateGroupInfo(_ group: GroupModel, name: String, description: String, rules: String, imageURL: String?, session: SessionManager) async {
+        await run {
+            guard let user = session.currentUser else {
+                throw GroupViewModelError.missingUser
+            }
+
+            try await GroupService.shared.updateGroupInfo(
+                groupId: group.groupId,
+                name: name,
+                description: description,
+                rules: rules,
+                imageURL: imageURL,
+                mentorId: user.uid
+            )
+            self.successMessage = "Group information updated."
             await self.load(session: session)
         }
     }
@@ -121,6 +144,18 @@ final class GroupViewModel: ObservableObject {
 
             try await GroupService.shared.updateStatus(groupId: group.groupId, status: status, mentorId: user.uid)
             self.successMessage = "Community is now \(status.displayName)."
+            await self.load(session: session)
+        }
+    }
+
+    func removeMember(_ memberId: String, from group: GroupModel, session: SessionManager) async {
+        await run {
+            guard let user = session.currentUser else {
+                throw GroupViewModelError.missingUser
+            }
+
+            try await GroupService.shared.removeMember(groupId: group.groupId, memberId: memberId, mentorId: user.uid)
+            self.successMessage = "Member removed."
             await self.load(session: session)
         }
     }

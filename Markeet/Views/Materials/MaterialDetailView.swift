@@ -112,7 +112,7 @@ struct MaterialDetailView: View {
                             .frame(height: 1)
 
                         // Description
-                        Text("Deskripsi")
+                        Text("Description")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(AppTheme.textTertiary)
                             .textCase(.uppercase)
@@ -126,7 +126,7 @@ struct MaterialDetailView: View {
                         // Tags section
                         if !material.tags.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Kategori")
+                                Text("Category")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(AppTheme.textTertiary)
                                     .textCase(.uppercase)
@@ -158,7 +158,7 @@ struct MaterialDetailView: View {
                                     HStack(spacing: 10) {
                                         Image(systemName: "safari.fill")
                                             .font(.system(size: 16))
-                                        Text("Buka Materi")
+                                        Text("Open Material")
                                             .font(.system(size: 16, weight: .semibold))
                                     }
                                     .primaryButton()
@@ -174,7 +174,7 @@ struct MaterialDetailView: View {
                                 HStack(spacing: 10) {
                                     Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
                                         .font(.system(size: 16))
-                                    Text(isSaved ? "Hapus dari Tersimpan" : "Simpan Materi")
+                                    Text(isSaved ? "Remove from Saved" : "Save Material")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
                                 .secondaryButton()

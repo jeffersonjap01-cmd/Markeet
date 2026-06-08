@@ -32,7 +32,7 @@ extension Color {
 extension Date {
     var relativeTimeString: String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
+        formatter.locale = Locale(identifier: "en_US")
         formatter.unitsStyle = .short
         return formatter.localizedString(for: self, relativeTo: Date())
     }

@@ -56,7 +56,7 @@ struct AdminProfileView: View {
                                 Button {
                                     showingLogoutAlert = true
                                 } label: {
-                                    adminRow(icon: "rectangle.portrait.and.arrow.right", title: "Logout", color: AppTheme.error)
+                                    adminRow(icon: "rectangle.portrait.and.arrow.right", title: "Sign Out", color: AppTheme.error)
                                 }
                             }
                             .padding(.horizontal, AppTheme.Spacing.lg)
@@ -65,18 +65,18 @@ struct AdminProfileView: View {
                 } else {
                     EmptyStateView(
                         icon: "person.crop.circle",
-                        title: "Belum Masuk",
-                        subtitle: "Silakan login untuk melihat profil kamu."
+                        title: "Not Signed In",
+                        subtitle: "Please sign in to view your profile."
                     )
                 }
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("Keluar dari Markeet?", isPresented: $showingLogoutAlert) {
-                Button("Batal", role: .cancel) { }
-                Button("Keluar", role: .destructive) { session.signOut() }
+            .alert("Sign out of Markeet?", isPresented: $showingLogoutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) { session.signOut() }
             } message: {
-                Text("Kamu harus login ulang untuk mengakses akunmu.")
+                Text("You will need to sign in again to access your account.")
             }
         }
     }
@@ -94,11 +94,11 @@ struct AdminProfileView: View {
 
             Text(title)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(title == "Logout" ? AppTheme.error : AppTheme.textPrimary)
+                .foregroundColor(title == "Sign Out" ? AppTheme.error : AppTheme.textPrimary)
 
             Spacer()
 
-            if title != "Logout" {
+            if title != "Sign Out" {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(AppTheme.textTertiary)

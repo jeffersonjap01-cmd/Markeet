@@ -38,11 +38,11 @@ struct RegisterView: View {
                                 .background(.white.opacity(0.2))
                                 .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                            Text("Buat Akun Baru")
+                            Text("Create New Account")
                                 .font(.system(size: 26, weight: .bold))
                                 .foregroundColor(.white)
 
-                            Text("Bergabung dengan komunitas marketing")
+                            Text("Join the marketing community")
                                 .font(.system(size: 13))
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -58,10 +58,10 @@ struct RegisterView: View {
                                     .foregroundColor(AppTheme.primary)
                                     .font(.system(size: 16))
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Periode Onboarding 7 Hari")
+                                    Text("7-Day Onboarding Period")
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundColor(AppTheme.textPrimary)
-                                    Text("Konsultasi admin & gabung komunitas hanya tersedia 7 hari pertama setelah daftar.")
+                                    Text("Admin consultation and community joining are available only during the first 7 days after registration.")
                                         .font(.system(size: 12))
                                         .foregroundColor(AppTheme.textSecondary)
                                 }
@@ -73,16 +73,16 @@ struct RegisterView: View {
                             // Fields
                             VStack(spacing: AppTheme.Spacing.md) {
                                 fieldView(
-                                    label: "Nama Lengkap",
+                                    label: "Full Name",
                                     icon: "person.fill",
-                                    placeholder: "Masukkan nama lengkap",
+                                    placeholder: "Enter your full name",
                                     text: $viewModel.fullName
                                 )
 
                                 fieldView(
                                     label: "Email",
                                     icon: "envelope.fill",
-                                    placeholder: "Masukkan alamat email",
+                                    placeholder: "Enter your email address",
                                     text: $viewModel.email,
                                     keyboard: .emailAddress
                                 )
@@ -90,15 +90,15 @@ struct RegisterView: View {
                                 secureFieldView(
                                     label: "Password",
                                     icon: "lock.fill",
-                                    placeholder: "Minimal 6 karakter",
+                                    placeholder: "Minimum 6 characters",
                                     text: $viewModel.password,
                                     isVisible: $showPassword
                                 )
 
                                 secureFieldView(
-                                    label: "Konfirmasi Password",
+                                    label: "Confirm Password",
                                     icon: "lock.fill",
-                                    placeholder: "Ulangi password",
+                                    placeholder: "Re-enter your password",
                                     text: $viewModel.confirmPassword,
                                     isVisible: $showConfirmPassword
                                 )
@@ -127,7 +127,7 @@ struct RegisterView: View {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     } else {
-                                        Text("Daftar Sekarang")
+                                        Text("Register Now")
                                     }
                                 }
                                 .primaryButton()
@@ -136,10 +136,10 @@ struct RegisterView: View {
 
                             // Login link
                             HStack(spacing: 4) {
-                                Text("Sudah punya akun?")
+                                Text("Already have an account?")
                                     .font(.system(size: 14))
                                     .foregroundColor(AppTheme.textSecondary)
-                                Button("Masuk") { dismiss() }
+                                Button("Sign In") { dismiss() }
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(AppTheme.primary)
                             }

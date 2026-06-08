@@ -28,12 +28,12 @@ struct ProfileView: View {
                 } else {
                     EmptyStateView(
                         icon: "person.crop.circle",
-                        title: "Belum Masuk",
-                        subtitle: "Silakan login untuk melihat profil kamu."
+                        title: "Not Signed In",
+                        subtitle: "Please sign in to view your profile."
                     )
                 }
             }
-            .navigationTitle("Profil")
+            .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingEditProfile) {
                 if let user = session.currentUser {
@@ -45,11 +45,11 @@ struct ProfileView: View {
                 SavedMaterialsView()
                     .environmentObject(session)
             }
-            .alert("Keluar dari Markeet?", isPresented: $showLogoutAlert) {
-                Button("Batal", role: .cancel) { }
-                Button("Keluar", role: .destructive) { session.signOut() }
+            .alert("Sign out of Markeet?", isPresented: $showLogoutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) { session.signOut() }
             } message: {
-                Text("Kamu harus login ulang untuk mengakses akunmu.")
+                Text("You will need to sign in again to access your account.")
             }
         }
     }
@@ -105,9 +105,9 @@ struct ProfileView: View {
 
             // Stats row
             HStack(spacing: 0) {
-                statItem(value: "\(user.assignedCommunities.count)", label: "Komunitas")
+                statItem(value: "\(user.assignedCommunities.count)", label: "Communities")
                 Divider().frame(height: 30)
-                statItem(value: "\(user.savedMaterials.count)", label: "Tersimpan")
+                statItem(value: "\(user.savedMaterials.count)", label: "Saved")
                 Divider().frame(height: 30)
                 statItem(value: "\(user.registeredEvents.count)", label: "Event")
             }
@@ -127,19 +127,19 @@ struct ProfileView: View {
         VStack(spacing: AppTheme.Spacing.md) {
             // Menu sections
             VStack(spacing: 2) {
-                menuSectionHeader("Akun")
-                menuRow(icon: "pencil.line", title: "Edit Profil", color: AppTheme.primary) {
+                menuSectionHeader("Account")
+                menuRow(icon: "pencil.line", title: "Edit Profile", color: AppTheme.primary) {
                     showingEditProfile = true
                 }
-                menuRow(icon: "bookmark.fill", title: "Materi Tersimpan", color: AppTheme.warning) {
+                menuRow(icon: "bookmark.fill", title: "Saved Materials", color: AppTheme.warning) {
                     showingSavedMaterials = true
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.lg)
 
             VStack(spacing: 2) {
-                menuSectionHeader("Lainnya")
-                menuRow(icon: "rectangle.portrait.and.arrow.right", title: "Keluar", color: AppTheme.error) {
+                menuSectionHeader("Other")
+                menuRow(icon: "rectangle.portrait.and.arrow.right", title: "Sign Out", color: AppTheme.error) {
                     showLogoutAlert = true
                 }
             }
@@ -180,7 +180,7 @@ struct ProfileView: View {
 
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(title == "Keluar" ? AppTheme.error : AppTheme.textPrimary)
+                    .foregroundColor(title == "Sign Out" ? AppTheme.error : AppTheme.textPrimary)
 
                 Spacer()
 

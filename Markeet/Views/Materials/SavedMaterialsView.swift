@@ -17,20 +17,20 @@ struct SavedMaterialsView: View {
                 Color(hex: "F2F2F7").ignoresSafeArea()
 
                 if viewModel.isLoading {
-                    ProgressView("Memuat materi tersimpan...")
+                    ProgressView("Loading saved materials...")
                         .foregroundColor(AppTheme.textSecondary)
                 } else if viewModel.savedMaterials.isEmpty {
                     EmptyStateView(
                         icon: "bookmark",
-                        title: "Belum Ada yang Disimpan",
-                        subtitle: "Ketuk ikon bookmark pada materi pembelajaran untuk menyimpannya di sini."
+                        title: "No Saved Materials Yet",
+                        subtitle: "Tap the bookmark icon on a learning material to save it here."
                     )
                 } else {
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: AppTheme.Spacing.sm) {
                             // Count badge
                             HStack {
-                                Text("\(viewModel.savedMaterials.count) materi tersimpan")
+                                Text("\(viewModel.savedMaterials.count) saved materials")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(AppTheme.textSecondary)
                                 Spacer()
@@ -61,7 +61,7 @@ struct SavedMaterialsView: View {
                     }
                 }
             }
-            .navigationTitle("Materi Tersimpan")
+            .navigationTitle("Saved Materials")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

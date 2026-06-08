@@ -27,13 +27,13 @@ struct MaterialsListView: View {
                 Color(hex: "F2F2F7").ignoresSafeArea()
 
                 if viewModel.isLoading && viewModel.materials.isEmpty {
-                    ProgressView("Memuat materi...")
+                    ProgressView("Loading materials...")
                         .foregroundColor(AppTheme.textSecondary)
                 } else if viewModel.materials.isEmpty {
                     EmptyStateView(
                         icon: "book.closed",
-                        title: "Belum Ada Materi",
-                        subtitle: "Materi pembelajaran yang diupload admin akan muncul di sini."
+                        title: "No Materials Yet",
+                        subtitle: "Learning materials uploaded by admins will appear here."
                     )
                 } else {
                     ScrollView(showsIndicators: false) {
@@ -60,10 +60,10 @@ struct MaterialsListView: View {
                                     Image(systemName: "magnifyingglass")
                                         .font(.system(size: 36))
                                         .foregroundColor(AppTheme.textTertiary)
-                                    Text("Tidak ditemukan")
+                                    Text("No results found")
                                         .font(.system(size: 15, weight: .medium))
                                         .foregroundColor(AppTheme.textSecondary)
-                                    Text("Coba kata kunci lain")
+                                    Text("Try another keyword")
                                         .font(.system(size: 13))
                                         .foregroundColor(AppTheme.textTertiary)
                                 }
@@ -79,8 +79,8 @@ struct MaterialsListView: View {
                     }
                 }
             }
-            .navigationTitle("📚 Materi")
-            .searchable(text: $searchText, prompt: "Cari materi...")
+            .navigationTitle("📚 Materials")
+            .searchable(text: $searchText, prompt: "Search materials...")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink {

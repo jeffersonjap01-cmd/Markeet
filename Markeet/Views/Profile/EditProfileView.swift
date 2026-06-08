@@ -56,7 +56,7 @@ struct EditProfileView: View {
                                 }
                             }
 
-                            Text("Ketuk ikon kamera untuk ganti foto")
+                            Text("Tap the camera icon to change your photo")
                                 .font(.system(size: 12))
                                 .foregroundColor(AppTheme.textTertiary)
                         }
@@ -66,9 +66,9 @@ struct EditProfileView: View {
                         // ── Form Fields ──────────────────────
                         VStack(spacing: AppTheme.Spacing.md) {
                             editField(
-                                label: "Nama Lengkap",
+                                label: "Full Name",
                                 icon: "person.fill",
-                                placeholder: "Masukkan nama lengkap",
+                                placeholder: "Enter your full name",
                                 text: $viewModel.fullName
                             )
 
@@ -172,11 +172,11 @@ struct EditProfileView: View {
                                     HStack(spacing: 10) {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                        Text("Menyimpan...")
+                                        Text("Saving...")
                                             .foregroundColor(.white)
                                     }
                                 } else {
-                                    Label("Simpan Perubahan", systemImage: "checkmark.circle.fill")
+                                    Label("Save Changes", systemImage: "checkmark.circle.fill")
                                 }
                             }
                             .primaryButton(isEnabled: !viewModel.isSaving)
@@ -188,7 +188,7 @@ struct EditProfileView: View {
                     }
                 }
             }
-            .navigationTitle("Edit Profil")
+            .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

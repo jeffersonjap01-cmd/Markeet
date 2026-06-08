@@ -28,8 +28,8 @@ struct HomeView: View {
                     if viewModel.news.isEmpty && !viewModel.isLoading {
                         EmptyStateView(
                             icon: "newspaper",
-                            title: "Belum Ada Update",
-                            subtitle: "Update dari admin akan muncul di sini."
+                            title: "No Updates Yet",
+                            subtitle: "Admin updates will appear here."
                         )
                         .padding(.top, AppTheme.Spacing.xxl)
                     } else {
@@ -42,7 +42,7 @@ struct HomeView: View {
                 .padding(.vertical, AppTheme.Spacing.lg)
             }
             .background(Color(hex: "F2F2F7").ignoresSafeArea())
-            .navigationTitle("Beranda")
+            .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.inline)
             .overlay {
                 if viewModel.isLoading && viewModel.news.isEmpty {

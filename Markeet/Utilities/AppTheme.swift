@@ -207,10 +207,10 @@ struct RoleBadge: View {
     }
 }
 
-/// Section header with optional "See All" button
+/// Section header with optional "View All" button
 struct SectionHeader: View {
     var title: String
-    var actionTitle: String? = "Lihat Semua"
+    var actionTitle: String? = "View All"
     var action: (() -> Void)?
 
     var body: some View {
@@ -335,7 +335,7 @@ struct MarkeetSecureField: View {
 
 /// Generic loading overlay
 struct LoadingOverlay: View {
-    var message: String = "Memuat..."
+    var message: String = "Loading..."
 
     var body: some View {
         ZStack {

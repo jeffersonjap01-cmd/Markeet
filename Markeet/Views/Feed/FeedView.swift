@@ -31,7 +31,7 @@ struct FeedView: View {
         VStack(spacing: 0) {
 
             // HEADER
-                Text("Diskusi Global")
+                Text("Global Discussion")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
@@ -63,7 +63,7 @@ struct FeedView: View {
 
                     HStack {
 
-                        Text("Apa yang ingin kamu bagikan?")
+                        Text("What would you like to share?")
                             .foregroundColor(.gray)
 
                         Spacer()

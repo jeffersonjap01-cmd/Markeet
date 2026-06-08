@@ -1,6 +1,6 @@
 // MainView.swift
 // Markeet — Main tab bar matching design screenshots
-// Tabs: Beranda, Komunitas, Jadwal, Diskusi, Profil
+// Tabs: Home, Community, Schedule, Discussion, Profile
 
 import SwiftUI
 
@@ -11,32 +11,32 @@ struct MainView: View {
 
     var body: some View {
         TabView {
-            // BERANDA (Home)
-            Tab("Beranda", systemImage: "house.fill") {
+            // HOME
+            Tab("Home", systemImage: "house.fill") {
                 HomeView()
                     .environmentObject(session)
             }
 
-            // KOMUNITAS (Community)
-            Tab("Komunitas", systemImage: "person.3.fill") {
+            // COMMUNITY
+            Tab("Community", systemImage: "person.3.fill") {
                 ComunityView()
                     .environmentObject(session)
             }
 
-            // JADWAL (Schedule)
-            Tab("Jadwal", systemImage: "calendar") {
+            // SCHEDULE
+            Tab("Schedule", systemImage: "calendar") {
                 ScheduleView()
                     .environmentObject(session)
             }
 
-            // DISKUSI (Forum)
-            Tab("Diskusi", systemImage: "bubble.left.and.text.bubble.right.fill") {
+            // DISCUSSION
+            Tab("Discussion", systemImage: "bubble.left.and.text.bubble.right.fill") {
                 FeedView()
                     .environmentObject(session)
             }
 
-            // PROFIL (Profile)
-            Tab("Profil", systemImage: "person.crop.circle.fill") {
+            // PROFILE
+            Tab("Profile", systemImage: "person.crop.circle.fill") {
                 ProfileView()
                     .environmentObject(session)
             }

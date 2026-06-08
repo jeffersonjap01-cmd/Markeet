@@ -29,13 +29,13 @@ struct ForgotPasswordView: View {
                         }
                         .animation(.spring(response: 0.4), value: didSend)
 
-                        Text(didSend ? "Email Terkirim!" : "Lupa Password?")
+                        Text(didSend ? "Email Sent!" : "Forgot Password?")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(AppTheme.textPrimary)
 
                         Text(didSend
-                             ? "Cek email \(viewModel.email) untuk link reset password. Jangan lupa cek folder spam."
-                             : "Masukkan email yang terdaftar. Kami akan mengirimkan link untuk mereset password.")
+                             ? "Check \(viewModel.email) for the password reset link. Do not forget to check your spam folder."
+                             : "Enter your registered email address. We will send a link to reset your password.")
                             .font(.system(size: 14))
                             .foregroundColor(AppTheme.textSecondary)
                             .multilineTextAlignment(.center)
@@ -49,14 +49,14 @@ struct ForgotPasswordView: View {
                         VStack(spacing: AppTheme.Spacing.lg) {
                             // Email field
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("Alamat Email")
+                                Text("Email Address")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(AppTheme.textSecondary)
                                 HStack(spacing: 12) {
                                     Image(systemName: "envelope.fill")
                                         .font(.system(size: 14))
                                         .foregroundColor(AppTheme.textTertiary)
-                                    TextField("email@contoh.com", text: $viewModel.email)
+                                    TextField("email@example.com", text: $viewModel.email)
                                         .keyboardType(.emailAddress)
                                         .autocapitalization(.none)
                                         .autocorrectionDisabled()
@@ -98,7 +98,7 @@ struct ForgotPasswordView: View {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     } else {
-                                        Label("Kirim Link Reset", systemImage: "paperplane.fill")
+                                        Label("Send Reset Link", systemImage: "paperplane.fill")
                                     }
                                 }
                                 .primaryButton()
@@ -114,7 +114,7 @@ struct ForgotPasswordView: View {
                             Button {
                                 dismiss()
                             } label: {
-                                Text("Kembali ke Login")
+                                Text("Back to Login")
                                     .primaryButton()
                             }
 
@@ -123,7 +123,7 @@ struct ForgotPasswordView: View {
                                 viewModel.successMessage = nil
                                 viewModel.errorMessage   = nil
                             } label: {
-                                Text("Kirim ulang email")
+                                Text("Resend email")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(AppTheme.primary)
                             }

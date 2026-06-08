@@ -30,8 +30,8 @@ struct ScheduleView: View {
                 if session.currentUser == nil {
                     EmptyStateView(
                         icon: "calendar",
-                        title: "Belum Masuk",
-                        subtitle: "Silakan login untuk melihat jadwal kamu."
+                        title: "Not Signed In",
+                        subtitle: "Please sign in to view your schedule."
                     )
                 } else {
                     ScrollView(showsIndicators: false) {
@@ -48,10 +48,10 @@ struct ScheduleView: View {
                 }
 
                 if viewModel.isLoading {
-                    LoadingOverlay(message: "Memuat jadwal...")
+                    LoadingOverlay(message: "Loading schedule...")
                 }
             }
-            .navigationTitle("Jadwal")
+            .navigationTitle("Schedule")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 visibleMonth = viewModel.selectedDate
@@ -85,11 +85,11 @@ struct ScheduleView: View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(isMentor ? "Kelola aktivitas dan event" : "Aktivitas kamu hari ini")
+                    Text(isMentor ? "Manage activities and events" : "Your activities today")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
 
-                    Text(isMentor ? "Buat jadwal untuk member komunitasmu dan pantau peserta event." : "Pilih tanggal untuk melihat aktivitas, lalu daftar event yang tersedia.")
+                    Text(isMentor ? "Create schedules for your community members and monitor event participants." : "Select a date to view activities, then register for available events.")
                         .font(.system(size: 14))
                         .foregroundColor(AppTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -104,7 +104,7 @@ struct ScheduleView: View {
 
             if isMentor {
                 HStack(spacing: AppTheme.Spacing.sm) {
-                    scheduleActionButton(title: "Aktivitas", icon: "plus.circle.fill") {
+                    scheduleActionButton(title: "Activity", icon: "plus.circle.fill") {
                         editingActivity = nil
                         showingActivityEditor = true
                     }
@@ -203,14 +203,14 @@ struct ScheduleView: View {
 
     private var activitySection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            SectionHeader(title: isMentor ? "Aktivitas Tanggal Ini" : "Aktivitas Saya", actionTitle: nil)
+            SectionHeader(title: isMentor ? "Activities on This Date" : "My Activities", actionTitle: nil)
 
             let items = viewModel.selectedDateActivities
             if items.isEmpty {
                 EmptyScheduleCard(
                     icon: "calendar.badge.clock",
-                    title: "Tidak ada aktivitas",
-                    subtitle: "Belum ada aktivitas untuk \(viewModel.selectedDate.formatted(date: .abbreviated, time: .omitted))."
+                    title: "No Activities",
+                    subtitle: "There are no activities for \(viewModel.selectedDate.formatted(date: .abbreviated, time: .omitted))."
                 )
             } else {
                 VStack(spacing: AppTheme.Spacing.sm) {
@@ -244,14 +244,14 @@ struct ScheduleView: View {
 
     private var eventSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            SectionHeader(title: isMentor ? "Event Saya" : "Event Tersedia", actionTitle: nil)
+            SectionHeader(title: isMentor ? "My Events" : "Available Events", actionTitle: nil)
 
             let events = isMentor || isAdmin ? viewModel.mentorManageableEvents : viewModel.visibleEvents.filter { $0.isRegistrationOpen || viewModel.isRegistered(for: $0) }
             if events.isEmpty {
                 EmptyScheduleCard(
                     icon: "megaphone",
-                    title: "Belum ada event",
-                    subtitle: isMentor ? "Buat event untuk mulai mengundang member." : "Event yang tersedia akan muncul di sini."
+                    title: "No Events Yet",
+                    subtitle: isMentor ? "Create an event to start inviting members." : "Available events will appear here."
                 )
             } else {
                 VStack(spacing: AppTheme.Spacing.sm) {
@@ -280,7 +280,7 @@ struct ScheduleView: View {
             }
 
             if !isMentor && !viewModel.myRegisteredEvents.isEmpty {
-                SectionHeader(title: "Event Terdaftar", actionTitle: nil)
+                SectionHeader(title: "Registered Events", actionTitle: nil)
                     .padding(.top, AppTheme.Spacing.sm)
 
                 VStack(spacing: AppTheme.Spacing.sm) {
@@ -473,9 +473,9 @@ private struct ActivityRow: View {
 
             if isMentor {
                 HStack {
-                    Label("\(item.activity.assignedUserIds.count) peserta", systemImage: "person.2.fill")
+                    Label("\(item.activity.assignedUserIds.count) participants", systemImage: "person.2.fill")
                     Spacer()
-                    Label("\(completedCount) selesai", systemImage: "checkmark.seal.fill")
+                    Label("\(completedCount) completed", systemImage: "checkmark.seal.fill")
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(AppTheme.textSecondary)
@@ -484,7 +484,7 @@ private struct ActivityRow: View {
                 Button {
                     onToggle(!item.isCompleted)
                 } label: {
-                    Text(item.isCompleted ? "Tandai Belum Selesai" : "Tandai Selesai")
+                    Text(item.isCompleted ? "Mark as Incomplete" : "Mark as Complete")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(item.isCompleted ? AppTheme.primary : .white)
                         .frame(maxWidth: .infinity)
@@ -522,9 +522,9 @@ private struct ScheduleEventRow: View {
                         Spacer()
 
                         if isRegistered {
-                            RoleBadge(role: "Terdaftar", color: AppTheme.success)
+                            RoleBadge(role: "Registered", color: AppTheme.success)
                         } else if !event.isRegistrationOpen && !isMentor {
-                            RoleBadge(role: "Tutup", color: AppTheme.textTertiary)
+                            RoleBadge(role: "Closed", color: AppTheme.textTertiary)
                         }
                     }
 
@@ -536,7 +536,7 @@ private struct ScheduleEventRow: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Label(event.location, systemImage: "mappin.and.ellipse")
                         Label(event.startDate.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
-                        Label("\(event.participantCount)/\(event.capacity) peserta", systemImage: "person.2.fill")
+                        Label("\(event.participantCount)/\(event.capacity) participants", systemImage: "person.2.fill")
                     }
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(AppTheme.textSecondary)
@@ -606,18 +606,18 @@ private struct ActivityEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Detail Aktivitas") {
-                    TextField("Judul", text: $title)
-                    TextField("Deskripsi", text: $description, axis: .vertical)
+                Section("Activity Details") {
+                    TextField("Title", text: $title)
+                    TextField("Description", text: $description, axis: .vertical)
                         .lineLimit(3...5)
-                    DatePicker("Tanggal", selection: $date, displayedComponents: .date)
-                    DatePicker("Mulai", selection: $startTime, displayedComponents: .hourAndMinute)
-                    DatePicker("Selesai", selection: $endTime, displayedComponents: .hourAndMinute)
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                    DatePicker("Start", selection: $startTime, displayedComponents: .hourAndMinute)
+                    DatePicker("End", selection: $endTime, displayedComponents: .hourAndMinute)
                 }
 
-                Section("Peserta") {
+                Section("Participants") {
                     if viewModel.participantCandidates.isEmpty {
-                        Text("Belum ada member dari komunitas mentor ini.")
+                        Text("There are no members from this mentor's community yet.")
                             .foregroundColor(AppTheme.textSecondary)
                     } else {
                         ForEach(viewModel.participantCandidates) { user in
@@ -644,14 +644,14 @@ private struct ActivityEditorView: View {
                     }
                 }
             }
-            .navigationTitle(activity == nil ? "Aktivitas Baru" : "Edit Aktivitas")
+            .navigationTitle(activity == nil ? "New Activity" : "Edit Activity")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") {
+                    Button("Save") {
                         Task {
                             await save()
                             if viewModel.errorMessage == nil {
@@ -780,31 +780,31 @@ private struct ScheduleEventEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Detail Event") {
-                    TextField("Judul", text: $title)
-                    TextField("Deskripsi", text: $description, axis: .vertical)
+                Section("Event Details") {
+                    TextField("Title", text: $title)
+                    TextField("Description", text: $description, axis: .vertical)
                         .lineLimit(3...5)
-                    TextField("URL Gambar", text: $imageURL)
+                    TextField("Image URL", text: $imageURL)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
-                    TextField("Lokasi", text: $location)
-                    Stepper("Kapasitas: \(capacity)", value: $capacity, in: minimumCapacity...500)
+                    TextField("Location", text: $location)
+                    Stepper("Capacity: \(capacity)", value: $capacity, in: minimumCapacity...500)
                 }
 
-                Section("Waktu") {
-                    DatePicker("Mulai", selection: $startDate)
-                    DatePicker("Selesai", selection: $endDate)
-                    DatePicker("Deadline Registrasi", selection: $registrationDeadline)
+                Section("Time") {
+                    DatePicker("Start", selection: $startDate)
+                    DatePicker("End", selection: $endDate)
+                    DatePicker("Registration Deadline", selection: $registrationDeadline)
                 }
             }
-            .navigationTitle(event == nil ? "Event Baru" : "Edit Event")
+            .navigationTitle(event == nil ? "New Event" : "Edit Event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Batal") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Simpan") {
+                    Button("Save") {
                         Task {
                             await save()
                             if viewModel.errorMessage == nil {
@@ -893,13 +893,13 @@ private struct ScheduleEventDetailView: View {
             } else {
                 EmptyStateView(
                     icon: "calendar.badge.exclamationmark",
-                    title: "Event tidak ditemukan",
-                    subtitle: "Event ini mungkin sudah dihapus atau belum selesai dimuat."
+                    title: "Event Not Found",
+                    subtitle: "This event may have been deleted or has not finished loading."
                 )
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle("Detail Event")
+        .navigationTitle("Event Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isMentor {
@@ -945,11 +945,11 @@ private struct ScheduleEventDetailView: View {
 
     private func detailsCard(_ event: EventModel) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            SectionHeader(title: "Informasi Event", actionTitle: nil)
-            detailRow(icon: "calendar", title: "Mulai", value: event.startDate.formatted(date: .abbreviated, time: .shortened))
-            detailRow(icon: "calendar.badge.clock", title: "Selesai", value: event.endDate.formatted(date: .abbreviated, time: .shortened))
+            SectionHeader(title: "Event Information", actionTitle: nil)
+            detailRow(icon: "calendar", title: "Start", value: event.startDate.formatted(date: .abbreviated, time: .shortened))
+            detailRow(icon: "calendar.badge.clock", title: "End", value: event.endDate.formatted(date: .abbreviated, time: .shortened))
             detailRow(icon: "hourglass", title: "Deadline", value: event.registrationDeadline.formatted(date: .abbreviated, time: .shortened))
-            detailRow(icon: "person.2.fill", title: "Kapasitas", value: "\(event.participantCount)/\(event.capacity) peserta")
+            detailRow(icon: "person.2.fill", title: "Capacity", value: "\(event.participantCount)/\(event.capacity) participants")
         }
         .cardStyle()
     }
@@ -958,9 +958,9 @@ private struct ScheduleEventDetailView: View {
     private func actionCard(_ event: EventModel) -> some View {
         if isMentor {
             VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-                SectionHeader(title: "Peserta", actionTitle: nil)
+                SectionHeader(title: "Participants", actionTitle: nil)
                 if viewModel.eventParticipants.isEmpty {
-                    Text("Belum ada peserta yang terdaftar.")
+                    Text("There are no registered participants yet.")
                         .font(.system(size: 14))
                         .foregroundColor(AppTheme.textSecondary)
                 } else {
@@ -997,7 +997,7 @@ private struct ScheduleEventDetailView: View {
                             await viewModel.cancelRegistration(for: event, session: session)
                         }
                     } label: {
-                        Text("Batalkan Registrasi")
+                        Text("Cancel Registration")
                     }
                     .secondaryButton()
                 } else {
@@ -1006,7 +1006,7 @@ private struct ScheduleEventDetailView: View {
                             await viewModel.register(for: event, session: session)
                         }
                     } label: {
-                        Text(event.isRegistrationOpen ? "Daftar Event" : "Registrasi Ditutup")
+                        Text(event.isRegistrationOpen ? "Register for Event" : "Registration Closed")
                     }
                     .primaryButton(isEnabled: event.isRegistrationOpen)
                     .disabled(!event.isRegistrationOpen)

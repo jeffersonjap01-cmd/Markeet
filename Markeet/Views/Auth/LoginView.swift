@@ -46,7 +46,7 @@ struct LoginView: View {
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.white)
 
-                        Text("Komunitas Marketing Digital Indonesia")
+                        Text("Indonesian Digital Marketing Community")
                             .font(.system(size: 14))
                             .foregroundColor(.white.opacity(0.8))
                     }
@@ -59,11 +59,11 @@ struct LoginView: View {
 
                             // Header
                             VStack(spacing: 6) {
-                                Text("Selamat Datang!")
+                                Text("Welcome!")
                                     .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(AppTheme.textPrimary)
 
-                                Text("Masuk untuk melanjutkan")
+                                Text("Sign in to continue")
                                     .font(.system(size: 14))
                                     .foregroundColor(AppTheme.textSecondary)
                             }
@@ -89,7 +89,7 @@ struct LoginView: View {
                             // Forgot Password
                             HStack {
                                 Spacer()
-                                Button("Lupa Password?") {
+                                Button("Forgot Password?") {
                                     showingForgotPwd = true
                                 }
                                 .font(.system(size: 13, weight: .medium))
@@ -110,7 +110,7 @@ struct LoginView: View {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     } else {
-                                        Text("Masuk")
+                                        Text("Sign In")
                                     }
                                 }
                                 .primaryButton()
@@ -119,10 +119,10 @@ struct LoginView: View {
 
                             // Register link
                             HStack(spacing: 4) {
-                                Text("Belum punya akun?")
+                                Text("Do not have an account?")
                                     .font(.system(size: 14))
                                     .foregroundColor(AppTheme.textSecondary)
-                                Button("Daftar sekarang") {
+                                Button("Register now") {
                                     showingRegister = true
                                 }
                                 .font(.system(size: 14, weight: .semibold))
@@ -226,7 +226,7 @@ struct LoginView: View {
                 let idToken = String(data: tokenData, encoding: .utf8),
                 let nonce = currentNonce
             else {
-                viewModel.errorMessage = "Apple Sign-In gagal. Coba lagi."
+                viewModel.errorMessage = "Apple Sign-In failed. Please try again."
                 return
             }
             let credential = OAuthProvider.appleCredential(

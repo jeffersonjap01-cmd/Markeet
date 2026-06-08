@@ -62,7 +62,7 @@ struct ComunityView: View {
                     }
                 }
 
-                Section("Grup Komunitas") {
+                Section("Community Groups") {
                     if viewModel.joinedGroups.isEmpty && !viewModel.isLoading {
                         Text("Joined communities will appear here.")
                             .foregroundColor(AppTheme.textSecondary)
@@ -96,7 +96,7 @@ struct ComunityView: View {
                     }
                 }
             }
-            .navigationTitle("Komunitas")
+            .navigationTitle("Community")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if session.currentUser?.role == .mentor {

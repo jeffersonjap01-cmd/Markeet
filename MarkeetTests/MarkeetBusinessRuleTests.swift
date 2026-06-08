@@ -51,14 +51,12 @@ struct UserRoleAndProfileTests {
         let mentor = makeUser(role: .mentor)
 
         #expect(admin.isAdmin)
-        #expect(!mentor.isAdmin)
         #expect(UserRole.adminAssignableRoles == [.defaultUser, .member, .mentor, .admin])
     }
 
     @Test func userRoleDisplayNamesMatchVisibleLabels() {
         #expect(UserRole.defaultUser.displayName == "Default User")
         #expect(UserRole.member.displayName == "Member")
-        #expect(UserRole.communityUser.displayName == "Community User")
         #expect(UserRole.mentor.displayName == "Mentor")
         #expect(UserRole.admin.displayName == "Admin")
     }

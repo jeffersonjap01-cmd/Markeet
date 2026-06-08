@@ -22,7 +22,6 @@ enum FirestoreCollections {
 
 /// Firebase Storage path helpers.
 /// Only profile image upload is currently implemented; material paths are kept
-/// for stored URLs and future upload flows.
 enum StoragePaths {
     static func profileImage(uid: String) -> String {
         "profileImages/\(uid)/profile.jpg"

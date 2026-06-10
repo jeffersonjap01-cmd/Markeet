@@ -11,6 +11,9 @@ struct MaterialsListView: View {
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = MaterialsViewModel()
     @State private var searchText = ""
+    @State private var editingMaterial: MaterialModel?
+    @State private var showingAddMaterial = false
+    @State private var deletingMaterial: MaterialModel?
 
     private var filtered: [MaterialModel] {
         if searchText.isEmpty { return viewModel.materials }
@@ -31,9 +34,9 @@ struct MaterialsListView: View {
                         .foregroundColor(AppTheme.textSecondary)
                 } else if viewModel.materials.isEmpty {
                     EmptyStateView(
-                        icon: "book.closed",
-                        title: "No Materials Yet",
-                        subtitle: "Learning materials uploaded by admins will appear here."
+                        icon: "play.rectangle",
+                        title: "Belum ada materi pembelajaran.",
+                        subtitle: session.currentUser?.role == .mentor ? "Tap Add to upload your first video material." : "Video materials uploaded by mentors will appear here."
                     )
                 } else {
                     ScrollView(showsIndicators: false) {
@@ -51,6 +54,21 @@ struct MaterialsListView: View {
                                         materialCard(material)
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        if viewModel.canManage(material, session: session) {
+                                            Button {
+                                                editingMaterial = material
+                                            } label: {
+                                                Label("Edit Material", systemImage: "pencil")
+                                            }
+
+                                            Button(role: .destructive) {
+                                                deletingMaterial = material
+                                            } label: {
+                                                Label("Delete Material", systemImage: "trash")
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             .padding(.horizontal, AppTheme.Spacing.lg)
@@ -82,6 +100,16 @@ struct MaterialsListView: View {
             .navigationTitle("📚 Materials")
             .searchable(text: $searchText, prompt: "Search materials...")
             .toolbar {
+                if session.currentUser?.role == .mentor {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            showingAddMaterial = true
+                        } label: {
+                            Label("Add", systemImage: "plus")
+                        }
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink {
                         SavedMaterialsView()
@@ -100,6 +128,56 @@ struct MaterialsListView: View {
                 if viewModel.materials.isEmpty {
                     await viewModel.loadMaterials()
                 }
+            }
+            .sheet(isPresented: $showingAddMaterial) {
+                MaterialEditorView { title, description, videoURL, thumbnailURL, category, tags in
+                    await viewModel.saveMaterial(
+                        existing: nil,
+                        title: title,
+                        description: description,
+                        videoURL: videoURL,
+                        thumbnailURL: thumbnailURL,
+                        category: category,
+                        tags: tags,
+                        session: session
+                    )
+                }
+            }
+            .sheet(item: $editingMaterial) { material in
+                MaterialEditorView(material: material) { title, description, videoURL, thumbnailURL, category, tags in
+                    await viewModel.saveMaterial(
+                        existing: material,
+                        title: title,
+                        description: description,
+                        videoURL: videoURL,
+                        thumbnailURL: thumbnailURL,
+                        category: category,
+                        tags: tags,
+                        session: session
+                    )
+                }
+            }
+            .confirmationDialog(
+                "Delete this material?",
+                isPresented: Binding(
+                    get: { deletingMaterial != nil },
+                    set: { if !$0 { deletingMaterial = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                if let deletingMaterial {
+                    Button("Delete Material", role: .destructive) {
+                        Task {
+                            await viewModel.deleteMaterial(deletingMaterial, session: session)
+                            self.deletingMaterial = nil
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    deletingMaterial = nil
+                }
+            } message: {
+                Text("This video will no longer appear for users.")
             }
         }
     }
@@ -190,6 +268,19 @@ struct MaterialsListView: View {
                     .font(.system(size: 13))
                     .foregroundColor(AppTheme.textSecondary)
                     .lineLimit(2)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "person.circle")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textTertiary)
+                    Text(material.mentorName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AppTheme.textSecondary)
+                    Spacer()
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppTheme.primary)
+                }
 
                 HStack(spacing: 6) {
                     // Tags

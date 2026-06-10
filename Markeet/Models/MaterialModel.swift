@@ -10,7 +10,17 @@ struct MaterialModel: Identifiable, Equatable {
     var description: String
     var thumbnailURL: String?
     var contentURL: String
+    var videoURL: String
+    var youtubeVideoId: String
     var createdAt: Date
+    var updatedAt: Date
     var createdBy: String
+    var mentorName: String
+    var category: String?
     var tags: [String]
+    var isActive: Bool
+
+    var displayVideoURL: String {
+        videoURL.isEmpty ? contentURL : videoURL
+    }
 }

@@ -35,6 +35,14 @@ struct ValidationAndAuthenticationTests {
         #expect(AuthServiceError.notSignedIn.errorDescription == "Please sign in first.")
         #expect(AdminBootstrapError.adminAlreadyExists.errorDescription == "An admin account already exists. Use the admin role management screen for further role changes.")
     }
+
+    @Test func youtubeVideoHelperExtractsSupportedURLFormats() {
+        #expect(YouTubeVideoHelper.extractVideoId(from: "https://www.youtube.com/watch?v=abc123XYZ") == "abc123XYZ")
+        #expect(YouTubeVideoHelper.extractVideoId(from: "https://youtu.be/abc123XYZ") == "abc123XYZ")
+        #expect(YouTubeVideoHelper.extractVideoId(from: "https://www.youtube.com/embed/abc123XYZ") == "abc123XYZ")
+        #expect(YouTubeVideoHelper.extractVideoId(from: "https://www.youtube.com/shorts/abc123XYZ") == "abc123XYZ")
+        #expect(YouTubeVideoHelper.extractVideoId(from: "https://example.com/video") == nil)
+    }
 }
 
 struct UserRoleAndProfileTests {
@@ -507,10 +515,16 @@ private func makeMaterial(id: String) -> MaterialModel {
         title: "SEO Basics",
         description: "Intro material",
         thumbnailURL: nil,
-        contentURL: "https://example.com/material.pdf",
+        contentURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        videoURL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        youtubeVideoId: "dQw4w9WgXcQ",
         createdAt: Date(),
-        createdBy: "admin-1",
-        tags: ["SEO"]
+        updatedAt: Date(),
+        createdBy: "mentor-1",
+        mentorName: "Mentor One",
+        category: "SEO",
+        tags: ["SEO"],
+        isActive: true
     )
 }
 

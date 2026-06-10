@@ -12,7 +12,10 @@ import SwiftUI
 struct HomeView: View {
     // MARK: - State
 
+    @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = NewsViewModel()
+    @StateObject private var materialsViewModel = MaterialsViewModel()
+    @State private var showingAddMaterial = false
 
     var body: some View {
         NavigationStack {
@@ -38,6 +41,8 @@ struct HomeView: View {
                                 .padding(.horizontal, AppTheme.Spacing.lg)
                         }
                     }
+
+                    materialsSection
                 }
                 .padding(.vertical, AppTheme.Spacing.lg)
             }
@@ -50,12 +55,158 @@ struct HomeView: View {
                 }
             }
             .task {
-                await viewModel.loadNews()
+                await loadHomeData()
             }
             .refreshable {
-                await viewModel.loadNews()
+                await loadHomeData()
+            }
+            .sheet(isPresented: $showingAddMaterial) {
+                MaterialEditorView { title, description, videoURL, thumbnailURL, category, tags in
+                    await materialsViewModel.saveMaterial(
+                        existing: nil,
+                        title: title,
+                        description: description,
+                        videoURL: videoURL,
+                        thumbnailURL: thumbnailURL,
+                        category: category,
+                        tags: tags,
+                        session: session
+                    )
+                }
             }
         }
+    }
+
+    private var materialsSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Materi Pembelajaran")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text("Video marketing terbaru dari mentor")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+
+                Spacer()
+
+                if session.currentUser?.role == .mentor {
+                    Button {
+                        showingAddMaterial = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 34, height: 34)
+                            .background(AppTheme.primary)
+                            .clipShape(Circle())
+                    }
+                }
+            }
+            .padding(.horizontal, AppTheme.Spacing.lg)
+            .padding(.top, AppTheme.Spacing.md)
+
+            if materialsViewModel.isLoading && materialsViewModel.materials.isEmpty {
+                ProgressView("Loading materials...")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppTheme.Spacing.lg)
+            } else if materialsViewModel.materials.isEmpty {
+                EmptyStateView(
+                    icon: "play.rectangle",
+                    title: "Belum ada materi pembelajaran.",
+                    subtitle: session.currentUser?.role == .mentor ? "Tap Add to upload your first video material." : "Video materials uploaded by mentors will appear here."
+                )
+                .padding(.horizontal, AppTheme.Spacing.lg)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AppTheme.Spacing.md) {
+                        ForEach(materialsViewModel.materials.prefix(6)) { material in
+                            NavigationLink {
+                                MaterialDetailView(material: material)
+                                    .environmentObject(session)
+                            } label: {
+                                homeMaterialCard(material)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        NavigationLink {
+                            MaterialsListView()
+                                .environmentObject(session)
+                        } label: {
+                            VStack(spacing: AppTheme.Spacing.sm) {
+                                Image(systemName: "arrow.right.circle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(AppTheme.primary)
+                                Text("View All")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(AppTheme.textPrimary)
+                            }
+                            .frame(width: 140, height: 210)
+                            .background(AppTheme.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.lg))
+                            .shadow(color: AppTheme.Shadow.soft, radius: 8, y: 2)
+                        }
+                    }
+                    .padding(.horizontal, AppTheme.Spacing.lg)
+                }
+            }
+        }
+    }
+
+    private func homeMaterialCard(_ material: MaterialModel) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack(alignment: .center) {
+                AsyncImage(url: material.thumbnailURL.flatMap(URL.init(string:))) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        Rectangle()
+                            .fill(AppTheme.primary.opacity(0.12))
+                            .overlay {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(AppTheme.primary.opacity(0.45))
+                            }
+                    }
+                }
+                .frame(height: 105)
+                .frame(maxWidth: .infinity)
+                .clipped()
+
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 34))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.md))
+
+            Text(material.title)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(AppTheme.textPrimary)
+                .lineLimit(2)
+
+            Text(material.mentorName)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(AppTheme.textSecondary)
+                .lineLimit(1)
+
+            Text(material.createdAt.relativeTimeString)
+                .font(.system(size: 10))
+                .foregroundColor(AppTheme.textTertiary)
+        }
+        .padding(AppTheme.Spacing.sm)
+        .frame(width: 210, height: 210, alignment: .topLeading)
+        .background(AppTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.lg))
+        .shadow(color: AppTheme.Shadow.soft, radius: 8, y: 2)
+    }
+
+    private func loadHomeData() async {
+        await viewModel.loadNews()
+        await materialsViewModel.loadMaterials()
     }
 
     private func newsCard(_ news: NewsModel) -> some View {

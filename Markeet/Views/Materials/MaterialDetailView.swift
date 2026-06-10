@@ -10,6 +10,9 @@ struct MaterialDetailView: View {
 
     @EnvironmentObject private var session: SessionManager
     @StateObject private var viewModel = MaterialsViewModel()
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingEdit = false
+    @State private var showingDeleteConfirmation = false
 
     let material: MaterialModel
 
@@ -98,7 +101,7 @@ struct MaterialDetailView: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 12))
                                     .foregroundColor(AppTheme.textTertiary)
-                                Text("Admin")
+                                Text(material.mentorName)
                                     .font(.system(size: 12))
                                     .foregroundColor(AppTheme.textSecondary)
                             }
@@ -122,6 +125,21 @@ struct MaterialDetailView: View {
                             .font(.system(size: 15))
                             .foregroundColor(AppTheme.textPrimary)
                             .lineSpacing(5)
+
+                        // Video player
+                        Text("Video")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppTheme.textTertiary)
+                            .textCase(.uppercase)
+                            .tracking(0.6)
+
+                        if let videoId = YouTubeVideoHelper.extractVideoId(from: material.displayVideoURL) {
+                            YouTubePlayerView(videoId: videoId)
+                                .aspectRatio(16 / 9, contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.md))
+                        } else {
+                            InvalidVideoURLView()
+                        }
 
                         // Tags section
                         if !material.tags.isEmpty {
@@ -152,19 +170,6 @@ struct MaterialDetailView: View {
 
                         // Action buttons
                         VStack(spacing: AppTheme.Spacing.sm) {
-                            // Open material
-                            if let url = URL(string: material.contentURL) {
-                                Link(destination: url) {
-                                    HStack(spacing: 10) {
-                                        Image(systemName: "safari.fill")
-                                            .font(.system(size: 16))
-                                        Text("Open Material")
-                                            .font(.system(size: 16, weight: .semibold))
-                                    }
-                                    .primaryButton()
-                                }
-                            }
-
                             // Save/unsave
                             Button {
                                 Task {
@@ -179,6 +184,27 @@ struct MaterialDetailView: View {
                                 }
                                 .secondaryButton()
                             }
+
+                            if viewModel.canManage(material, session: session) {
+                                Button {
+                                    showingEdit = true
+                                } label: {
+                                    Label("Edit Material", systemImage: "pencil")
+                                        .secondaryButton()
+                                }
+
+                                Button {
+                                    showingDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete Material", systemImage: "trash")
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 52)
+                                        .background(AppTheme.error)
+                                        .cornerRadius(AppTheme.Radius.md)
+                                        .font(.system(size: 16, weight: .semibold))
+                                }
+                            }
                         }
                         .padding(.top, 4)
                     }
@@ -191,6 +217,53 @@ struct MaterialDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showingEdit) {
+            MaterialEditorView(material: material) { title, description, videoURL, thumbnailURL, category, tags in
+                await viewModel.saveMaterial(
+                    existing: material,
+                    title: title,
+                    description: description,
+                    videoURL: videoURL,
+                    thumbnailURL: thumbnailURL,
+                    category: category,
+                    tags: tags,
+                    session: session
+                )
+            }
+        }
+        .confirmationDialog(
+            "Delete this material?",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Material", role: .destructive) {
+                Task {
+                    await viewModel.deleteMaterial(material, session: session)
+                    dismiss()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This video will no longer appear for users.")
+        }
+    }
+}
+
+private struct InvalidVideoURLView: View {
+    var body: some View {
+        VStack(spacing: AppTheme.Spacing.sm) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 28))
+                .foregroundColor(AppTheme.warning)
+            Text("This material does not contain a valid YouTube link.")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 180)
+        .background(AppTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.md))
     }
 }
 
